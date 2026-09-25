@@ -4,16 +4,32 @@ Data Processor - Analysis and export functionality
 
 import json
 import csv
-import base64
-from io import BytesIO
 from datetime import datetime
-from pathlib import Path
 import numpy as np
+
+DEFAULT_SAMPLE_RATE_HZ = 100.0  # used only when readings carry no timestamps
+
+# np.trapz was removed in NumPy 2.x in favour of np.trapezoid
+_trapezoid = getattr(np, 'trapezoid', None) or getattr(np, 'trapz')
 
 
 class DataProcessor:
     """Process and export session data"""
-    
+
+    @staticmethod
+    def _time_axis(data):
+        """Seconds since the first sample for each reading.
+
+        Uses each reading's ISO timestamp; falls back to a fixed 100 Hz spacing
+        when any timestamp is missing or unparsable so old exports still work.
+        """
+        try:
+            times = [datetime.fromisoformat(d['timestamp']) for d in data]
+        except (KeyError, TypeError, ValueError):
+            return np.arange(len(data)) / DEFAULT_SAMPLE_RATE_HZ
+        t0 = times[0]
+        return np.array([(t - t0).total_seconds() for t in times])
+
     @staticmethod
     def export_to_csv(session_data, filename):
         """Export session data to CSV file"""
@@ -130,11 +146,14 @@ class DataProcessor:
         voltages = np.array([d['voltage'] for d in data])
         currents = np.array([d['current'] for d in data])
         powers = np.array([d['power'] for d in data])
+        t = DataProcessor._time_axis(data)
+        duration = float(t[-1] - t[0]) if len(t) > 1 else 0.0
 
         # Basic stats
         stats = {
             'sample_count': len(data),
-            'duration_seconds': len(data) / 100,  # Assuming 100Hz
+            'duration_seconds': duration,
+            'sample_rate_hz': (len(data) - 1) / duration if duration > 0 else 0.0,
             'voltage': {
                 'min': float(np.min(voltages)),
                 'max': float(np.max(voltages)),
@@ -162,10 +181,9 @@ class DataProcessor:
             }
         }
 
-        # Calculate energy and capacity using trapezoidal integration
-        dt = 1.0 / 100.0 / 3600.0  # 100Hz to hours
-        total_energy_wh = np.trapz(powers, dx=1/100) / 3600
-        total_capacity_ah = np.trapz(currents, dx=1/100) / 3600
+        # Energy and capacity by trapezoidal integration over real timestamps
+        total_energy_wh = _trapezoid(powers, t) / 3600
+        total_capacity_ah = _trapezoid(currents, t) / 3600
 
         stats['energy_wh'] = float(total_energy_wh)
         stats['capacity_ah'] = float(total_capacity_ah)
@@ -359,7 +377,7 @@ class DataProcessor:
                 </div>
                 <div class="info-item">
                     <span class="info-label">Connection Type:</span>
-                    <span class="info-value">{session.get('connection_type', 'N/A').upper()}</span>
+                    <span class="info-value">{(session.get('connection_type') or 'N/A').upper()}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Total Samples:</span>
@@ -371,7 +389,7 @@ class DataProcessor:
                 </div>
                 <div class="info-item">
                     <span class="info-label">Sample Rate:</span>
-                    <span class="info-value">100 Hz</span>
+                    <span class="info-value">{stats['sample_rate_hz']:.1f} Hz</span>
                 </div>
             </div>
         </div>
@@ -683,7 +701,7 @@ class DataProcessor:
         # Session info
         report.append(f"Start Time: {session.get('start_time', 'N/A')}")
         report.append(f"End Time: {session.get('end_time', 'N/A')}")
-        report.append(f"Connection: {session.get('connection_type', 'N/A').upper()}")
+        report.append(f"Connection: {(session.get('connection_type') or 'N/A').upper()}")
         report.append("")
 
         # Statistics

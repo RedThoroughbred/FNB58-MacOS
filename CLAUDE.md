@@ -28,7 +28,8 @@ fnirsi-web-monitor/
 │   ├── dashboard.html         # Main monitoring interface
 │   ├── settings.html          # Bluetooth scanner and configuration
 │   └── history.html           # Session viewer and comparison
-└── tests/                     # (Future) Test files
+├── tests/                      # pytest suite (hardware-free)
+└── ios/                        # SwiftUI + CoreBluetooth iPhone app
 ```
 
 ## Architecture
@@ -81,18 +82,24 @@ fnirsi-web-monitor/
 **Purpose**: Communicate with FNIRSI via USB HID protocol
 
 **Key Methods**:
-- `connect()` - Find and configure USB device
-- `start_reading(callback)` - Begin background thread
-- `_decode_packet(data)` - Parse 64-byte packets into readings
+- `connect()` - Find and configure USB device (table `KNOWN_DEVICES`)
+- `start_reading(callback)` - Send init handshake, begin background thread
+- `decode_packet(data)` - Module-level pure function; parse 64-byte packet into readings
 
-**Data Format** (per packet):
-- 4 samples at offsets 1, 17, 33, 49
-- Each sample: V (4 bytes), I (4 bytes), D+ (2 bytes), D- (2 bytes), Temp (2 bytes)
-- All values little-endian
+**Device IDs** (from baryluk's logger, verified against hardware):
+- FNB58 `0x2E3C:0x5558`, FNB48S `0x2E3C:0x0049` (slow 1 s keep-alive, `0xAA 0x82`)
+- FNB48 `0x0483:0x003A`, C1 `0x0483:0x003B` (3 ms keep-alive, `0xAA 0x83`)
+
+**Packet Format** (64 bytes):
+- `[0]` = 0xAA, `[1]` = packet type (only `0x04` carries data)
+- 4 samples at offsets `2 + 15*i` (2, 17, 32, 47), **15-byte stride**
+- Each sample: V u32 /100000, I u32 /100000, D+ u16 /1000, D- u16 /1000, 1 unknown byte, Temp u16 /10
+- `[63]` = CRC-8 (poly 0x39, init 0x42) over `[1..62]`; bad-CRC packets are dropped
 
 **Important Notes**:
-- FNB58/FNB48S needs 1s refresh, others need 3ms
-- Device may require udev rules on Linux
+- Init sequence `0xAA81`, `0xAA82`, then the per-model poll command, must be sent before data flows
+- `trigger_voltage()` / `adjust_qc3_voltage()` are EXPERIMENTAL and unverified - the API reports "command sent", never "voltage changed"
+- Device may require udev rules on Linux; macOS needs no kernel-driver detach
 - Always call `disconnect()` to release device
 
 ### 2. Bluetooth Reader (`device/bluetooth_reader.py`)
@@ -100,9 +107,9 @@ fnirsi-web-monitor/
 **Purpose**: Communicate with FNIRSI FNB58 via Bluetooth LE
 
 **Key Methods**:
-- `scan_devices(timeout)` - Scan for FNB58 devices
-- `connect()` - Connect to device (async wrapped)
-- `start_reading(callback)` - Enable notifications
+- `scan_for_devices(timeout, name_filter)` - Module-level coroutine; returns address/name/rssi
+- `parse_frame(data)` - Module-level pure function
+- `connect()` / `start_reading(callback)` / `disconnect()` - Synchronous wrappers
 
 **UUIDs**:
 - Write: `0000ffe9-0000-1000-8000-00805f9b34fb`
@@ -114,8 +121,10 @@ fnirsi-web-monitor/
 
 **Important Notes**:
 - Requires `bleak` library
-- Uses asyncio event loop in separate thread
+- One private asyncio loop on a dedicated thread (`_LoopThread`); every bleak call goes through
+  `run_coroutine_threadsafe`. Never drive the loop from a Flask thread.
 - Limited data compared to USB (no D+/D-/Temp)
+- The same protocol is implemented natively in `ios/FNB58Monitor/Bluetooth/` (CoreBluetooth)
 
 ### 3. Device Manager (`device/device_manager.py`)
 
@@ -132,7 +141,13 @@ fnirsi-web-monitor/
 device_manager = DeviceManager()
 ```
 
-**Thread Safety**: Uses `threading.Lock()` for all shared state
+**Thread Safety**: Uses `threading.RLock()` for all shared state; data callbacks are invoked
+outside the lock. `DeviceManager(reader_factories=...)` accepts injectable reader factories
+(see `tests/fakes.py`). Auto mode tries USB first (fails fast), then Bluetooth.
+
+**Statistics**: Energy/capacity are integrated from reading timestamps, not an assumed sample
+rate. `min_voltage`/`min_current` are `None` (not `inf`) before the first sample so `/api/stats`
+is always valid JSON.
 
 ### 4. Flask App (`app.py`)
 
@@ -162,7 +177,7 @@ historical_data      # Server → Client: Historical data response
 ```
 
 **Important Notes**:
-- Uses Flask-SocketIO with threading mode
+- Uses Flask-SocketIO in `threading` async mode (no eventlet; needs `simple-websocket`)
 - CORS enabled for development
 - Sessions saved as JSON in `sessions/` directory
 
@@ -304,17 +319,18 @@ def api_analyze_session(filename):
 SECRET_KEY=your-secret-key-here
 FLASK_ENV=development
 HOST=0.0.0.0
-PORT=5000
+PORT=5001
 BT_DEVICE_ADDRESS=98:DA:B0:08:A1:82  # Optional
 ```
 
 ### Config Class (`config.py`)
 ```python
-DEVICE_VENDOR_ID = 0x0716  # FNIRSI vendor ID
-DEVICE_PRODUCT_IDS = [0x5030, 0x5031]  # Supported products
-SAMPLE_RATE_HZ = 100  # USB sampling rate
-BT_SAMPLE_RATE_HZ = 10  # Bluetooth sampling rate
+HOST = '0.0.0.0'; PORT = 5001   # 5000 is AirPlay Receiver on macOS
+BT_DEVICE_NAME = 'FNB58'
+SESSION_DIR / EXPORT_DIR         # overridable via env; tests point them at tmp dirs
 ```
+`FLASK_CONFIG=development|production|testing` selects the config class. USB IDs live in
+`device/usb_reader.py::KNOWN_DEVICES`, not in config.
 
 ## Dependencies
 
@@ -463,12 +479,12 @@ print(devices)
 - [ ] Protocol triggering (QC/PD modes)
 - [ ] Advanced statistics (FFT, harmonics)
 - [ ] Comparison mode (overlay sessions)
-- [ ] Mobile native app (React Native)
+- [x] Mobile native app (SwiftUI, `ios/`)
 - [ ] Desktop app (Electron)
 - [ ] Cloud sync and sharing
 
 ### Code Quality
-- [ ] Unit tests (pytest)
+- [x] Unit tests (pytest)
 - [ ] Integration tests
 - [ ] Type hints throughout
 - [ ] Code coverage (>80%)
@@ -500,29 +516,41 @@ python start.py
 
 ### Run Tests
 ```bash
-python test_setup.py
+python -m pytest                      # backend: decoders, DeviceManager, Flask API (no hardware needed)
+python test_setup.py                  # dependency sanity check
+cd ios && xcodegen generate && \
+  xcodebuild test -project FNB58Monitor.xcodeproj -scheme FNB58Monitor \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'   # iOS unit tests
 ```
+
+### iOS App (`ios/`)
+Native SwiftUI + CoreBluetooth app (iOS 17+), generated from `ios/project.yml` with
+[xcodegen](https://github.com/yonaskolb/XcodeGen). It talks to the meter directly over BLE
+(no Flask server involved), so it only gets V/I/W. `FNB58Protocol.swift` mirrors
+`device/bluetooth_reader.py`; keep them in sync. Sessions are JSON in the app's Documents
+directory (visible in Files); CSV export goes through the share sheet. In the Simulator use
+"Use demo data" - it has no Bluetooth radio.
 
 ### Connect to Device
 ```bash
 # Auto-detect
-curl -X POST http://localhost:5000/api/connect -H "Content-Type: application/json" -d '{"mode":"auto"}'
+curl -X POST http://localhost:5001/api/connect -H "Content-Type: application/json" -d '{"mode":"auto"}'
 
 # USB only
-curl -X POST http://localhost:5000/api/connect -H "Content-Type: application/json" -d '{"mode":"usb"}'
+curl -X POST http://localhost:5001/api/connect -H "Content-Type: application/json" -d '{"mode":"usb"}'
 
 # Bluetooth only
-curl -X POST http://localhost:5000/api/connect -H "Content-Type: application/json" -d '{"mode":"bluetooth"}'
+curl -X POST http://localhost:5001/api/connect -H "Content-Type: application/json" -d '{"mode":"bluetooth"}'
 ```
 
 ### Get Latest Reading
 ```bash
-curl http://localhost:5000/api/reading/latest
+curl http://localhost:5001/api/reading/latest
 ```
 
 ### Get Stats
 ```bash
-curl http://localhost:5000/api/stats
+curl http://localhost:5001/api/stats
 ```
 
 ---
