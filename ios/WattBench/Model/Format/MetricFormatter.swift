@@ -139,7 +139,7 @@ struct MetricFormatter {
 
     /// Storage sizes ("42 MB"), locale-aware.
     func byteCount(_ bytes: Int) -> String {
-        Int64(bytes).formatted(.byteCount(style: .file).locale(locale))
+        Int64(bytes).formatted(.byteCount(style: .file, spellsOutZero: false).locale(locale))
     }
 
     // MARK: VoiceOver

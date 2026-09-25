@@ -183,7 +183,7 @@ struct SettingsView: View {
                 } label: {
                     Label("Stop demo data", systemImage: "stop.circle")
                 }
-                .tint(.demo)
+                .foregroundStyle(Color.demo)
             } else {
                 Button {
                     meter.startDemo()
@@ -191,7 +191,7 @@ struct SettingsView: View {
                 } label: {
                     Label("Try demo data", systemImage: "play.circle")
                 }
-                .tint(.demo)
+                .foregroundStyle(Color.demo)
             }
         }
     }

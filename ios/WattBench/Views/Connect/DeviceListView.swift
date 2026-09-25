@@ -103,8 +103,10 @@ struct DeviceListView: View {
                 connectedSection(name: name, isDemo: false)
                 nearbySection
             case .demo:
+                // Demo has its own Stop; a Scan action here would be a no-op
+                // whenever Bluetooth is off, so Nearby only appears with rows.
                 connectedSection(name: "Demo data", isDemo: true)
-                nearbySection
+                if !visibleDevices.isEmpty { nearbySection }
             case .idle, .scanning, .connecting:
                 if autoConnecting == nil, meter.hasLastDevice, meter.recording == nil {
                     Section {
@@ -132,7 +134,9 @@ struct DeviceListView: View {
             advancedSection
         }
         .listStyle(.insetGrouped)
-        .animation(.snappy, value: meter.devices)
+        // Keyed on membership/order only: MeterManager rewrites the array on
+        // every advertisement, which must not re-animate the list per sample.
+        .animation(.snappy, value: meter.devices.map(\.id))
         .animation(.snappy, value: autoConnecting)
     }
 
@@ -142,7 +146,7 @@ struct DeviceListView: View {
                 userInteracted = true
                 switch kind {
                 case .reconnecting, .unreachable: meter.retryNow()
-                default: meter.startScan()
+                default: restartScan()
                 }
             }, secondaryAction: {
                 userInteracted = true
@@ -154,7 +158,7 @@ struct DeviceListView: View {
                     meter.disconnect()
                 case .unreachable:
                     meter.disconnect()
-                    meter.startScan()
+                    restartScan()
                 default:
                     break
                 }
@@ -195,7 +199,7 @@ struct DeviceListView: View {
                     if timedOut {
                         ConnectEmptyState(state: .nothingFound, primaryAction: {
                             userInteracted = true
-                            meter.startScan()
+                            restartScan()
                         }, secondaryAction: {
                             meter.startDemo()
                             dismiss()
@@ -208,18 +212,21 @@ struct DeviceListView: View {
                             .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     }
                 case .connecting:
-                    HStack(spacing: 12) {
-                        ProgressView()
-                        Text(meter.state.label).foregroundStyle(.secondary)
+                    // The auto-connect row above already shows this state.
+                    if autoConnecting == nil {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                            Text(meter.state.label).foregroundStyle(.secondary)
+                        }
+                        .frame(minHeight: 44)
                     }
-                    .frame(minHeight: 44)
                 default:
                     if !search.isEmpty {
                         Text("No devices match “\(search)”").foregroundStyle(.secondary)
                     } else {
                         ConnectEmptyState(state: .idle, primaryAction: {
                             userInteracted = true
-                            meter.startScan()
+                            restartScan()
                         })
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -288,7 +295,7 @@ struct DeviceListView: View {
                 userInteracted = true
                 autoConnecting = nil
                 meter.disconnect()
-                meter.startScan()
+                restartScan()
             }
             .buttonStyle(.bordered)
         }
@@ -325,7 +332,7 @@ struct DeviceListView: View {
         case .scanning:
             Button("Stop") { userInteracted = true; meter.stopScan() }
         case .idle, .unreachable:
-            Button("Scan") { userInteracted = true; meter.startScan() }
+            Button("Scan") { userInteracted = true; restartScan() }
         default:
             EmptyView()
         }
@@ -337,6 +344,15 @@ struct DeviceListView: View {
     /// or reconnecting meter keeps its state until the user asks.
     private func beginScanIfIdle() {
         if meter.state == .idle { meter.startScan() }
+    }
+
+    /// Starts (or restarts) a scan and resets the not-found timer locally:
+    /// when the meter is already `.scanning`, `startScan()` assigns an equal
+    /// state and `.onChange(of: meter.state)` never fires.
+    private func restartScan() {
+        timedOut = false
+        scanStartedAt = Date()
+        meter.startScan()
     }
 }
 

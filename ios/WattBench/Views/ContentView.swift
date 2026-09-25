@@ -6,6 +6,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppRouter.self) private var router
     @Environment(MeterManager.self) private var meter
+    @Environment(SessionStore.self) private var store
     @Environment(Preferences.self) private var prefs
     @Environment(\.scenePhase) private var scenePhase
 
@@ -25,6 +26,12 @@ struct ContentView: View {
                 .tabItem { Label("Sessions", systemImage: "clock.arrow.circlepath") }
                 .tag(AppRouter.Tab.sessions)
         }
+        // Haptics attach once, here at the root, so they fire exactly once
+        // per connect/error, record start/stop and save regardless of which
+        // tab or sheet is on screen. Subviews must not attach these again.
+        .connectionFeedback(meter)
+        .recordingFeedback(meter)
+        .saveFeedback(store)
         // Keep-awake: recomputed whenever any input changes and reset to
         // false the moment the app leaves the foreground or the meter drops.
         .onChange(of: keepAwakeWanted, initial: true) { _, wanted in
