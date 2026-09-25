@@ -146,16 +146,19 @@ function initializeEventListeners() {
 }
 
 // Connect to device
-async function connectDevice(mode) {
+async function connectDevice(mode, deviceAddress = null) {
     try {
         showToastPro(`Connecting via ${mode.toUpperCase()}...`, 'info');
 
+        const body = { mode };
+        if (deviceAddress) body.device_address = deviceAddress;
         const result = await apiRequest('/api/connect', {
             method: 'POST',
-            body: JSON.stringify({ mode })
+            body: JSON.stringify(body)
         });
 
         if (result.success) {
+            resetEnergyState();
             updateConnectionUI(true, result.connection_type);
             showToastPro('Connected via ' + result.connection_type.toUpperCase(), 'success');
         }
@@ -220,6 +223,8 @@ function updateConnectionUI(connected, type = '') {
 
 // Handle new readings from WebSocket
 function handleNewReading(reading) {
+    // Energy keeps integrating while the display is frozen
+    accumulateEnergy(reading);
     if (isFrozen) return;
 
     // Update header metric values with more precision
@@ -310,39 +315,49 @@ function average(arr) {
     return arr.reduce((a, b) => a + b, 0) / arr.length;
 }
 
-// Calculate and update energy and capacity
-function updateEnergyCapacity() {
-    if (dataBuffer.length < 2) return;
+// Running energy / capacity / runtime since connect. Kept separately from
+// dataBuffer (which is capped at 10k samples and cleared by CLEAR), and
+// integrated from each reading's timestamp rather than an assumed sample rate.
+const energyState = { wh: 0, mah: 0, runtimeS: 0, lastTs: null, lastPower: 0, lastCurrent: 0 };
+const MAX_SAMPLE_GAP_S = 5; // ignore gaps from reconnects / suspended tabs
 
-    // Calculate energy (Wh) and capacity (mAh) using trapezoidal integration
-    let totalEnergy = 0; // Wh
-    let totalCapacity = 0; // mAh
+function resetEnergyState() {
+    energyState.wh = 0;
+    energyState.mah = 0;
+    energyState.runtimeS = 0;
+    energyState.lastTs = null;
+}
 
-    for (let i = 1; i < dataBuffer.length; i++) {
-        const dt = 1.0 / sampleRate / 3600.0; // Time delta in hours (dynamic sample rate)
-
-        // Trapezoidal rule: (P1 + P2) / 2 * dt
-        const avgPower = (dataBuffer[i-1].power + dataBuffer[i].power) / 2;
-        const avgCurrent = (dataBuffer[i-1].current + dataBuffer[i].current) / 2;
-
-        totalEnergy += avgPower * dt;
-        totalCapacity += avgCurrent * dt * 1000; // Convert to mAh
+function accumulateEnergy(reading) {
+    const ts = reading.timestamp ? Date.parse(reading.timestamp) : Date.now();
+    if (Number.isFinite(ts) && energyState.lastTs !== null) {
+        const dtS = (ts - energyState.lastTs) / 1000;
+        if (dtS >= 0 && dtS <= MAX_SAMPLE_GAP_S) {
+            const dtH = dtS / 3600;
+            // Trapezoidal rule between consecutive samples
+            energyState.wh += (energyState.lastPower + reading.power) / 2 * dtH;
+            energyState.mah += (energyState.lastCurrent + reading.current) / 2 * dtH * 1000;
+            energyState.runtimeS += dtS;
+        }
     }
+    energyState.lastTs = Number.isFinite(ts) ? ts : energyState.lastTs;
+    energyState.lastPower = reading.power;
+    energyState.lastCurrent = reading.current;
+}
 
-    // Calculate runtime
-    const runtime = dataBuffer.length / sampleRate; // seconds (dynamic sample rate)
+function updateEnergyCapacity() {
+    const runtime = energyState.runtimeS;
     const hours = Math.floor(runtime / 3600);
     const minutes = Math.floor((runtime % 3600) / 60);
     const seconds = Math.floor(runtime % 60);
     const runtimeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-    // Update display in header
     const energyEl = document.getElementById('energy-value-header');
     const capacityEl = document.getElementById('capacity-value-header');
     const runtimeEl = document.getElementById('runtime-value-header');
 
-    if (energyEl) energyEl.textContent = totalEnergy.toFixed(4);
-    if (capacityEl) capacityEl.textContent = totalCapacity.toFixed(2);
+    if (energyEl) energyEl.textContent = energyState.wh.toFixed(4);
+    if (capacityEl) capacityEl.textContent = energyState.mah.toFixed(2);
     if (runtimeEl) runtimeEl.textContent = runtimeString;
 }
 
@@ -776,17 +791,19 @@ function connectWebSocket() {
         console.error('WebSocket connection error:', error);
     });
 
-    socket.on('reconnect', (attemptNumber) => {
+    // Socket.IO v4 emits reconnection events on the Manager (socket.io), not the socket
+    socket.io.on('reconnect', (attemptNumber) => {
         console.log(`✓ WebSocket reconnected after ${attemptNumber} attempts`);
+        checkConnectionStatus();
     });
 
-    socket.on('reconnect_attempt', (attemptNumber) => {
+    socket.io.on('reconnect_attempt', (attemptNumber) => {
         if (attemptNumber === 1 || attemptNumber % 5 === 0) {
             console.log(`Reconnection attempt ${attemptNumber}...`);
         }
     });
 
-    socket.on('reconnect_failed', () => {
+    socket.io.on('reconnect_failed', () => {
         console.error('WebSocket reconnection failed');
         showToastPro('Connection lost - please refresh page', 'error');
     });
@@ -824,6 +841,21 @@ async function checkConnectionStatus() {
         const status = await apiRequest('/api/status');
         if (status.connected) {
             updateConnectionUI(true, status.connection_type);
+        }
+        // Restore recording UI after a page reload so START can't silently
+        // discard an in-progress session on the server.
+        if (status.is_recording && !isRecording) {
+            isRecording = true;
+            recordingStartTime = recordingStartTime || Date.now();
+            const indicator = document.getElementById('rec-indicator');
+            const statusText = document.getElementById('rec-status-text');
+            const btnStart = document.getElementById('btn-start-recording');
+            const btnStop = document.getElementById('btn-stop-recording');
+            if (indicator) indicator.classList.add('recording');
+            if (statusText) statusText.textContent = (status.session_name || 'RECORDING').toUpperCase();
+            if (btnStart) btnStart.classList.add('hidden');
+            if (btnStop) btnStop.classList.remove('hidden');
+            if (typeof updateRecordingDuration === 'function') updateRecordingDuration();
         }
     } catch (error) {
         console.error('Failed to check status:', error);
@@ -880,24 +912,30 @@ function toggleDevicePanel() {
     }
 }
 
-// Auto-collapse on mobile devices
+// Mobile: the device bar stays expanded. There is no way to re-open it on a
+// phone (the collapse toggle is hidden by CSS), so collapsing it hid the
+// connect buttons entirely.
 function initMobileOptimizations() {
-    if (window.innerWidth <= 768) {
-        const bar = document.getElementById('device-control-bar');
-        const content = document.getElementById('device-control-content');
-        const toggle = document.getElementById('collapse-toggle');
-
-        if (bar && content && toggle) {
-            bar.classList.add('collapsed');
-            content.style.maxHeight = '0';
-            toggle.style.transform = 'rotate(-90deg)';
-        }
+    const toggle = document.getElementById('collapse-toggle');
+    const bar = document.getElementById('device-control-bar');
+    if (toggle && bar && !toggle.dataset.bound) {
+        toggle.dataset.bound = '1';
+        toggle.addEventListener('click', () => bar.classList.toggle('collapsed'));
     }
 }
 
-// Initialize mobile optimizations on load
+// Settings page hands off a chosen Bluetooth device via ?connect=bluetooth&address=…
+function autoConnectFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('connect');
+    if (!mode) return;
+    history.replaceState(null, '', window.location.pathname);  // don't reconnect on refresh
+    connectDevice(mode, params.get('address'));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initMobileOptimizations();
+    autoConnectFromQuery();
 });
 
 // ============ TRIGGER VIEW FUNCTIONS ============
@@ -1024,10 +1062,12 @@ function updateTriggerView(reading) {
             protocolDetails.textContent = reading.protocol.description || 'Unknown protocol';
         }
 
-        activeProtocol = reading.protocol.protocol;
-
-        // Enable/disable trigger panels based on detected protocol and connection type
-        updateTriggerPanelStates(reading.protocol);
+        // Only re-query connection status when the protocol actually changes;
+        // doing it per reading meant ~100 /api/status requests per second.
+        if (activeProtocol !== reading.protocol.protocol) {
+            activeProtocol = reading.protocol.protocol;
+            updateTriggerPanelStates(reading.protocol);
+        }
     }
 
     // Update sample count

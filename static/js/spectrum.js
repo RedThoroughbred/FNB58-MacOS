@@ -16,6 +16,12 @@ function initSpectrum() {
         return;
     }
 
+    // Re-entering the tab re-initialises; Chart.js throws if the canvas is reused
+    if (spectrumChart) {
+        spectrumChart.destroy();
+        spectrumChart = null;
+    }
+
     spectrumChart = new Chart(ctx, {
         type: 'line',
         data: {

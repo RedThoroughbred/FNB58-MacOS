@@ -289,7 +289,7 @@
             </div>
             <div class="control-group">
                 <label>WINDOW</label>
-                <select id="fft-window" class="control-select">
+                <select id="fft-window" class="control-select" onchange="updateFFTWindow()">
                     <option value="hann">Hann</option>
                     <option value="hamming">Hamming</option>
                     <option value="blackman">Blackman</option>
@@ -298,7 +298,7 @@
             </div>
             <div class="control-group">
                 <label>FFT SIZE</label>
-                <select id="fft-size" class="control-select">
+                <select id="fft-size" class="control-select" onchange="updateFFTSize()">
                     <option value="256">256</option>
                     <option value="512">512</option>
                     <option value="1024" selected>1024</option>

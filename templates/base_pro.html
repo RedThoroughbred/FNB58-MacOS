@@ -102,20 +102,22 @@
             try {
                 const response = await fetch('/api/system-stats');
                 const data = await response.json();
-
-                if (data.success) {
-                    const cpuEl = document.getElementById('cpu-usage');
-                    const memEl = document.getElementById('mem-usage');
-
-                    if (cpuEl) cpuEl.textContent = data.cpu_percent + '%';
-                    if (memEl) memEl.textContent = data.memory_mb + 'MB';
-                }
-            } catch (error) {
-                // Fallback to mock data if API fails
                 const cpuEl = document.getElementById('cpu-usage');
                 const memEl = document.getElementById('mem-usage');
-                if (cpuEl) cpuEl.textContent = '15.2%';
-                if (memEl) memEl.textContent = '153MB';
+
+                if (data.success) {
+                    if (cpuEl) cpuEl.textContent = data.cpu_percent + '%';
+                    if (memEl) memEl.textContent = data.memory_mb + 'MB';
+                } else {
+                    // psutil not installed: show that we have no numbers rather than fake ones
+                    if (cpuEl) cpuEl.textContent = 'n/a';
+                    if (memEl) memEl.textContent = 'n/a';
+                }
+            } catch (error) {
+                const cpuEl = document.getElementById('cpu-usage');
+                const memEl = document.getElementById('mem-usage');
+                if (cpuEl) cpuEl.textContent = 'n/a';
+                if (memEl) memEl.textContent = 'n/a';
             }
         }
         setInterval(updateSystemStats, 2000);

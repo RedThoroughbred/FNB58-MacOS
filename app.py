@@ -3,31 +3,40 @@ FNIRSI FNB58 Web Monitor - Main Flask Application
 Real-time USB power monitoring with WebSocket support
 """
 
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request, send_file, redirect, url_for
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from device import DeviceManager, DataProcessor
+from device.bluetooth_reader import scan_for_devices
 from config import config
+import asyncio
+import logging
 import os
 import json
 from datetime import datetime
 from pathlib import Path
 
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', 'INFO'),
+                    format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+log = logging.getLogger('fnb58')
+
 # Initialize Flask app
 app = Flask(__name__)
-app.config.from_object(config['development'])
-config['development'].init_app(app)
+config_name = os.environ.get('FLASK_CONFIG', 'development')
+app.config.from_object(config[config_name])
+config[config_name].init_app(app)
 
 # Enable CORS
 CORS(app)
 
-# Initialize SocketIO with extended timeout and ping settings
+# Threading mode: plain OS threads, so the USB reader thread (blocking libusb
+# calls) and the Bluetooth asyncio loop coexist without eventlet monkey-patching.
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='eventlet',
-    ping_timeout=60,  # Increase timeout before disconnecting inactive client
-    ping_interval=25,  # Send ping every 25 seconds to keep connection alive
+    async_mode='threading',
+    ping_timeout=60,
+    ping_interval=25,
     logger=False,
     engineio_logger=False
 )
@@ -42,7 +51,6 @@ data_processor = DataProcessor()
 @app.route('/')
 def index():
     """Redirect to professional dashboard"""
-    from flask import redirect, url_for
     return redirect(url_for('dashboard_pro'))
 
 
@@ -86,20 +94,16 @@ def api_connect():
         mode = data.get('mode', 'auto')  # 'auto', 'usb', or 'bluetooth'
         device_address = data.get('device_address')  # For Bluetooth
 
-        print(f"📡 Connect request: mode={mode}, address={device_address}")
+        log.info("Connect request: mode=%s address=%s", mode, device_address)
 
         result = device_manager.connect(mode=mode, device_address=device_address)
+        device_manager.register_callback(broadcast_data)
         device_manager.start_monitoring()
 
-        # Register WebSocket callback
-        device_manager.register_callback(broadcast_data)
-
-        print(f"✓ Connected successfully via {result.get('connection_type')}")
-        return jsonify({'success': True, **result})
+        log.info("Connected via %s", result.get('connection_type'))
+        return jsonify(result)
     except Exception as e:
-        print(f"❌ Connection failed: {e}")
-        import traceback
-        traceback.print_exc()
+        log.exception("Connection failed")
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
@@ -117,15 +121,8 @@ def api_disconnect():
 def api_scan_bluetooth():
     """Scan for Bluetooth devices"""
     try:
-        from device.bluetooth_reader import BluetoothReader
-        import asyncio
-        
-        reader = BluetoothReader()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        devices = loop.run_until_complete(reader.scan_devices(timeout=10))
-        loop.close()
-        
+        timeout = request.args.get('timeout', default=8.0, type=float)
+        devices = asyncio.run(scan_for_devices(timeout=min(max(timeout, 1.0), 30.0)))
         return jsonify({'success': True, 'devices': devices})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
@@ -162,8 +159,10 @@ def api_start_recording():
         data = request.json or {}
         session_name = data.get('name')
 
-        device_manager.start_recording()
-        device_manager.session_name = session_name  # Store session name
+        if not device_manager.is_connected:
+            return jsonify({'success': False, 'error': 'Not connected to a device'}), 400
+
+        device_manager.start_recording(name=session_name)
         return jsonify({'success': True, 'start_time': datetime.now().isoformat(), 'name': session_name})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
@@ -173,27 +172,17 @@ def api_start_recording():
 def api_stop_recording():
     """Stop recording session"""
     try:
+        if not device_manager.is_recording:
+            return jsonify({'success': False, 'error': 'Not recording'}), 400
+
         session = device_manager.stop_recording()
+        session_name = session.get('name')
 
-        # Get session name if it was set
-        session_name = getattr(device_manager, 'session_name', None)
-
-        # Save session to file with name
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-        # Create filename with session name if provided
-        if session_name:
-            # Sanitize filename
-            safe_name = "".join(c for c in session_name if c.isalnum() or c in (' ', '-', '_')).strip()
-            safe_name = safe_name.replace(' ', '_')
-            filename = f'{safe_name}_{timestamp}.json'
-        else:
-            filename = f'session_{timestamp}.json'
-
+        safe_name = "".join(c for c in (session_name or '') if c.isalnum() or c in (' ', '-', '_')).strip()
+        safe_name = safe_name.replace(' ', '_')
+        filename = f'{safe_name}_{timestamp}.json' if safe_name else f'session_{timestamp}.json'
         session_file = os.path.join(app.config['SESSION_DIR'], filename)
-
-        # Add name to session data
-        session['name'] = session_name
 
         with open(session_file, 'w') as f:
             json.dump(session, f, indent=2)
@@ -255,6 +244,15 @@ def api_export_html():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+def _session_path(filename):
+    """Resolve a session filename inside SESSION_DIR, or None if it escapes it."""
+    session_dir = Path(app.config['SESSION_DIR']).resolve()
+    candidate = (session_dir / filename).resolve()
+    if candidate.parent != session_dir or candidate.suffix != '.json':
+        return None
+    return str(candidate)
+
+
 @app.route('/api/sessions')
 def api_list_sessions():
     """List saved sessions"""
@@ -262,18 +260,21 @@ def api_list_sessions():
         sessions = []
         session_dir = Path(app.config['SESSION_DIR'])
 
-        # Get all .json files (both session_*.json and named sessions)
         for session_file in sorted(session_dir.glob('*.json'), reverse=True):
-            with open(session_file, 'r') as f:
-                session_info = json.load(f)
-                sessions.append({
-                    'filename': session_file.name,
-                    'name': session_info.get('name', 'Untitled'),  # Include session name
-                    'start_time': session_info.get('start_time'),
-                    'end_time': session_info.get('end_time'),
-                    'connection_type': session_info.get('connection_type'),
-                    'samples': len(session_info.get('data', []))
-                })
+            try:
+                with open(session_file, 'r') as f:
+                    session_info = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                log.warning("Skipping unreadable session %s: %s", session_file.name, e)
+                continue
+            sessions.append({
+                'filename': session_file.name,
+                'name': session_info.get('name') or 'Untitled',
+                'start_time': session_info.get('start_time'),
+                'end_time': session_info.get('end_time'),
+                'connection_type': session_info.get('connection_type'),
+                'samples': len(session_info.get('data', []))
+            })
 
         return jsonify({'success': True, 'sessions': sessions})
     except Exception as e:
@@ -284,7 +285,9 @@ def api_list_sessions():
 def api_get_session(filename):
     """Get a specific session"""
     try:
-        session_file = os.path.join(app.config['SESSION_DIR'], filename)
+        session_file = _session_path(filename)
+        if session_file is None:
+            return jsonify({'success': False, 'error': 'Invalid filename'}), 400
 
         if not os.path.exists(session_file):
             return jsonify({'success': False, 'error': 'Session not found'}), 404
@@ -301,11 +304,9 @@ def api_get_session(filename):
 def api_delete_session(filename):
     """Delete a specific session"""
     try:
-        # Security: ensure filename doesn't contain path traversal
-        if '..' in filename or '/' in filename or '\\' in filename:
+        session_file = _session_path(filename)
+        if session_file is None:
             return jsonify({'success': False, 'error': 'Invalid filename'}), 400
-
-        session_file = os.path.join(app.config['SESSION_DIR'], filename)
 
         if not os.path.exists(session_file):
             return jsonify({'success': False, 'error': 'Session not found'}), 404
@@ -341,21 +342,23 @@ def api_trigger_voltage():
         if not protocol or voltage is None:
             return jsonify({'success': False, 'error': 'Missing protocol or voltage'}), 400
 
-        print(f"⚡ Trigger request: {protocol.upper()} {voltage}V")
+        voltage = int(voltage)
+        log.info("Trigger request: %s %sV", protocol.upper(), voltage)
 
-        device_manager.trigger_voltage(protocol, int(voltage))
+        device_manager.trigger_voltage(protocol, voltage)
 
         return jsonify({
             'success': True,
             'protocol': protocol,
             'voltage': voltage,
-            'message': f'{protocol.upper()} {voltage}V triggered successfully'
+            'experimental': True,
+            'message': f'{protocol.upper()} {voltage}V command sent (experimental - confirm on the meter display)'
         })
-    except Exception as e:
-        print(f"❌ Trigger failed: {e}")
-        import traceback
-        traceback.print_exc()
+    except (ValueError, ConnectionError) as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        log.exception("Trigger failed")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/trigger/qc3-adjust', methods=['POST'])
@@ -368,20 +371,22 @@ def api_qc3_adjust():
         if voltage is None:
             return jsonify({'success': False, 'error': 'Missing voltage'}), 400
 
-        print(f"⚡ QC 3.0 adjust request: {voltage:.2f}V")
+        voltage = float(voltage)
+        log.info("QC 3.0 adjust request: %.2fV", voltage)
 
-        device_manager.adjust_qc3_voltage(float(voltage))
+        device_manager.adjust_qc3_voltage(voltage)
 
         return jsonify({
             'success': True,
             'voltage': voltage,
-            'message': f'QC 3.0 adjusted to {voltage:.2f}V'
+            'experimental': True,
+            'message': f'QC 3.0 {voltage:.2f}V command sent (experimental - confirm on the meter display)'
         })
-    except Exception as e:
-        print(f"❌ QC 3.0 adjustment failed: {e}")
-        import traceback
-        traceback.print_exc()
+    except (ValueError, ConnectionError) as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        log.exception("QC 3.0 adjustment failed")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/alerts')
@@ -469,14 +474,7 @@ def api_system_stats():
             'memory_percent': memory.percent
         })
     except ImportError:
-        # psutil not available, return mock data
-        import random
-        return jsonify({
-            'success': True,
-            'cpu_percent': round(random.uniform(10, 30), 1),
-            'memory_mb': round(random.uniform(100, 300), 0),
-            'memory_percent': round(random.uniform(40, 60), 1)
-        })
+        return jsonify({'success': False, 'error': 'psutil not installed'}), 501
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
 
@@ -484,21 +482,21 @@ def api_system_stats():
 # ==================== WebSocket Events ====================
 
 def broadcast_data(reading):
-    """Broadcast new reading to all connected clients"""
+    """Broadcast new reading to all connected clients (called from the reader thread)."""
     socketio.emit('new_reading', reading, namespace='/')
 
 
 @socketio.on('connect')
 def handle_connect():
     """Handle WebSocket connection"""
-    print('Client connected')
+    log.debug('WebSocket client connected')
     emit('connection_response', {'status': 'connected'})
 
 
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle WebSocket disconnection"""
-    print('Client disconnected')
+    log.debug('WebSocket client disconnected')
 
 
 @socketio.on('request_data')
@@ -530,12 +528,10 @@ def internal_error(error):
 # ==================== Main ====================
 
 if __name__ == '__main__':
+    port = app.config['PORT']
     print("=" * 60)
     print("FNIRSI FNB58 Web Monitor")
+    print(f"Dashboard: http://localhost:{port}")
     print("=" * 60)
-    print("Starting server...")
-    print("Dashboard will be available at: http://localhost:5000")
-    print("=" * 60)
-    
-    # Run with SocketIO
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host=app.config['HOST'], port=port, debug=app.config['DEBUG'],
+                 allow_unsafe_werkzeug=True)

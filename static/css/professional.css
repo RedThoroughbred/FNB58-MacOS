@@ -1736,8 +1736,10 @@ body {
         display: none !important;
     }
 
-    /* Keep device controls visible on mobile */
-    .control-content {
+    /* Keep device controls visible on mobile. Must match the specificity of
+       `.control-bar.collapsed .control-content` above or that rule wins. */
+    .control-content,
+    .control-bar.collapsed .control-content {
         max-height: none !important;
     }
 
