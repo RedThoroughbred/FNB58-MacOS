@@ -39,8 +39,45 @@ final class SessionSnapshotTests: XCTestCase {
         mount(SessionsListView())
         pump(1.5)
         snapshot("list-light")
+        deviceShot("list-light")
         setDark(true)
         snapshot("list-dark")
+        deviceShot("list-dark")
+    }
+
+    /// The path a first-time user takes: demo data, a recording, then the
+    /// saved session in the list and its report. Saving goes through the same
+    /// `onRecordingStopped` hook `WattBenchApp` wires.
+    func testRenderDemoRecordingFlow() throws {
+        let store = try XCTUnwrap(store)
+        let router = try XCTUnwrap(router)
+        let meter = MeterManager()
+        meter.onRecordingStopped = { session, _ in try? store.save(session) }
+        meter.startDemo()
+        pump(1)
+        meter.startRecording(name: "Demo run", tags: ["demo"], notes: "Simulated readings.")
+        pump(4)
+        meter.addMarker(label: "Load step")
+        pump(6)
+        mount(SessionsListView(), meter: meter)     // recording chip while recording
+        pump(1)
+        snapshot("demo-recording-list-light")
+        let saved = try XCTUnwrap(meter.stopRecording())
+        XCTAssertTrue(saved.isDemo)
+        pump(1)
+        XCTAssertTrue(store.summaries.contains { $0.id == saved.id }, "saved through the hook")
+        snapshot("demo-saved-list-light")
+        deviceShot("demo-saved-list-light")
+        router.sessionPath = [saved.id]
+        pump(3)
+        snapshot("demo-detail-light")
+        deviceShot("demo-detail-light")
+        scroll(to: 560)
+        snapshot("demo-detail-chart-light")
+        setDark(true)
+        snapshot("demo-detail-chart-dark")
+        deviceShot("demo-detail-chart-dark")
+        meter.disconnect()
     }
 
     func testRenderSessionsEmpty() throws {
@@ -62,19 +99,25 @@ final class SessionSnapshotTests: XCTestCase {
         router.sessionPath = [anker.id]
         pump(3)   // samples load off the main actor, then decimate
         snapshot("detail-top-light")
+        deviceShot("detail-top-light")
         scroll(to: 560)
         snapshot("detail-chart-light")
+        deviceShot("detail-chart-light")
         scroll(to: 1150)
         snapshot("detail-markers-light")
         scroll(to: 1900)
         snapshot("detail-bottom-light")
+        deviceShot("detail-bottom-light")
         setDark(true)
         scroll(to: 0)
         snapshot("detail-top-dark")
+        deviceShot("detail-top-dark")
         scroll(to: 560)
         snapshot("detail-chart-dark")
+        deviceShot("detail-chart-dark")
         scroll(to: 1150)
         snapshot("detail-markers-dark")
+        deviceShot("detail-markers-dark")
     }
 
     func testRenderSessionDetailSmallSession() throws {
@@ -119,23 +162,24 @@ final class SessionSnapshotTests: XCTestCase {
         mount(view)
         pump(1.5)
         snapshot("chart-cursor-range-light")
-        // `drawHierarchy` cannot capture materials faithfully; with
-        // WATTBENCH_HOLD=1 the view stays on screen so the device screen can
-        // be captured with `xcrun simctl io <udid> screenshot` meanwhile.
-        if env["WATTBENCH_HOLD"] == "1" { pump(12) }
+        deviceShot("chart-cursor-range-light")
+        setDark(true)
+        deviceShot("chart-cursor-range-dark")
+        setDark(false)
         model.select(span: .minute)
         model.reveal(mid)
         pump(1)
         snapshot("chart-zoomed-light")
+        deviceShot("chart-zoomed-light")
         setDark(true)
         snapshot("chart-zoomed-dark")
     }
 
     // MARK: - Harness
 
-    private func mount<V: View>(_ view: V) {
+    private func mount<V: View>(_ view: V, meter: MeterManager? = nil) {
         guard let store, let router else { return }
-        let meter = MeterManager()
+        let meter = meter ?? MeterManager()
         let root = view
             .environment(meter)
             .environment(store)
@@ -183,6 +227,21 @@ final class SessionSnapshotTests: XCTestCase {
     /// make progress.
     private func pump(_ seconds: TimeInterval) {
         RunLoop.main.run(until: Date().addingTimeInterval(seconds))
+    }
+
+    /// `drawHierarchy` cannot capture materials faithfully. With
+    /// `WATTBENCH_HOLD=1` this leaves the scene on screen and drops a request
+    /// file (`ws-C-request-<name>`) in the output folder; a shell loop that
+    /// runs `xcrun simctl io <udid> screenshot` and deletes the request
+    /// captures the real device screen meanwhile. Times out after 8 s.
+    private func deviceShot(_ name: String) {
+        guard env["WATTBENCH_HOLD"] == "1" else { return }
+        let request = outputDir.appendingPathComponent("ws-C-request-\(name)")
+        pump(0.5)
+        FileManager.default.createFile(atPath: request.path, contents: nil)
+        let deadline = Date().addingTimeInterval(8)
+        while FileManager.default.fileExists(atPath: request.path), Date() < deadline { pump(0.2) }
+        try? FileManager.default.removeItem(at: request)
     }
 
     private func snapshot(_ name: String) {

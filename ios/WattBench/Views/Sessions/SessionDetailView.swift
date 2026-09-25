@@ -133,15 +133,18 @@ struct SessionDetailView: View {
                 .controlSize(.small)
                 Spacer(minLength: 0)
             } else {
+                // The capsule strip takes whatever the badges and the Edit
+                // button leave over (they claim their width first).
                 SessionTagCapsules(tags: s.tags)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }
-            if s.isDemo { SessionDemoBadge() }
-            if s.state == .recovered { SessionRecoveredBadge() }
+            if s.isDemo { SessionDemoBadge().layoutPriority(1) }
+            if s.state == .recovered { SessionRecoveredBadge().layoutPriority(1) }
             if !s.tags.isEmpty {
                 Button("Edit") { showTagEditor = true }
                     .font(.caption.weight(.medium))
                     .fixedSize()
+                    .layoutPriority(1)
                     .accessibilityLabel("Edit tags")
             }
         }
