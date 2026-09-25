@@ -16,8 +16,8 @@ struct AlertsSettingsView: View {
             if alerts.rules.isEmpty {
                 emptySection
             } else {
+                presetSection
                 rulesSection
-                addSection
             }
             notificationsSection
         }
@@ -67,7 +67,8 @@ struct AlertsSettingsView: View {
         }
     }
 
-    private var addSection: some View {
+    /// Preset menu at the top, as the entry point for a new bench setup.
+    private var presetSection: some View {
         Section {
             presetMenu {
                 Label("Add preset", systemImage: "square.stack.3d.up")
@@ -75,6 +76,8 @@ struct AlertsSettingsView: View {
             Button { editing = newRule } label: {
                 Label("Add rule", systemImage: "plus.circle")
             }
+        } footer: {
+            Text("A preset adds its rules to the list; rules you already have are kept.")
         }
     }
 

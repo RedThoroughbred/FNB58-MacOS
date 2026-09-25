@@ -89,13 +89,13 @@ struct AutoStopRule: Codable, Equatable {
         switch reason {
         case .currentBelowThreshold:
             guard let a = belowCurrentA else { return reason.label }
-            return "current below \(formatter.format(a, .current).text) for \(AlertFormat.span(forSeconds, locale: formatter.locale))"
+            return "current below \(AlertFormat.value(a, .current, formatter: formatter)) for \(AlertFormat.span(forSeconds, locale: formatter.locale))"
         case .duration:
             guard let d = maxDuration else { return reason.label }
             return "after \(AlertFormat.span(d, locale: formatter.locale))"
         case .energy:
             guard let wh = maxEnergyWh else { return reason.label }
-            return "at \(formatter.energy(wh).text)"
+            return "at \(AlertFormat.energy(wh, formatter: formatter))"
         }
     }
 }

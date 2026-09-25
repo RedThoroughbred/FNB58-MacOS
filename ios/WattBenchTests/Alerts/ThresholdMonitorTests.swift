@@ -87,12 +87,13 @@ final class ThresholdMonitorTests: XCTestCase {
 
         // A tapering charge: 0.5 A falling 5 mA per sample crosses 50 mA at
         // sample 91 and settles at 20 mA. One alert, one second of samples
-        // later, and never again while it stays low.
+        // later, and never again while it stays low. (Integer milliamps keep
+        // sample 90 at exactly the 50 mA bound, not a rounding error under it.)
         var taper = ThresholdMonitor(rules: [rule], formatter: formatter)
         var taperFeed = Feed()
         var readings: [Reading] = []
         for k in 0..<200 {
-            readings.append(reading(at: Double(k) * 0.1, i: max(0.02, 0.5 - Double(k) * 0.005)))
+            readings.append(reading(at: Double(k) * 0.1, i: max(0.02, Double(500 - 5 * k) / 1000)))
         }
         let events = taperFeed.send(readings, to: &taper)
         XCTAssertEqual(events.count, 1)

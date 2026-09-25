@@ -69,6 +69,26 @@ final class AlertRuleTests: XCTestCase {
         XCTAssertEqual(AlertFormat.span(3600, locale: Locale(identifier: "en_US")), "1 hr")
     }
 
+    func testProseNumbersDropTrailingZerosButKeepPrecisionLocaleAndRanging() {
+        // Readouts pad to the precision ("3.500 A"); sentences do not.
+        XCTAssertEqual(formatter.format(3.5, .current).text, "3.50 A")
+        XCTAssertEqual(AlertFormat.value(3.5, .current, formatter: formatter), "3.5 A")
+        XCTAssertEqual(AlertFormat.value(3.456, .current, formatter: formatter), "3.46 A", "still 3 significant digits")
+        XCTAssertEqual(AlertFormat.value(0.05, .current, formatter: formatter), "50 mA")
+        XCTAssertEqual(AlertFormat.value(0.5, .voltage, formatter: formatter), "0.5 V", "voltage never auto-ranges")
+        XCTAssertEqual(AlertFormat.energy(0.25, formatter: formatter), "250 mWh")
+        XCTAssertEqual(AlertFormat.energy(27.4, formatter: formatter), "27.4 Wh")
+
+        var fixed = formatter
+        fixed.autoRange = false
+        XCTAssertEqual(AlertFormat.value(0.05, .current, formatter: fixed), "0.05 A")
+        XCTAssertEqual(AlertFormat.energy(0.25, formatter: fixed), "0.25 Wh")
+
+        let german = MetricFormatter(locale: Locale(identifier: "de_DE"), precision: 3)
+        XCTAssertEqual(AlertFormat.value(20.5, .voltage, formatter: german), "20,5 V")
+        XCTAssertEqual(AlertRule(.overCurrent, value: 3.5).summary(formatter: german), "Current above 3,5 A")
+    }
+
     func testPresetsMatchTheSpec() {
         XCTAssertEqual(AlertPreset.usbC65W.rules.map(\.condition), [.overVoltage, .overCurrent, .overPower, .voltageDrop])
         XCTAssertEqual(AlertPreset.usbC65W.rules.map { $0.value ?? 0 }, [21, 3.5, 70, 1])

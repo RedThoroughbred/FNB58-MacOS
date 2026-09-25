@@ -227,21 +227,21 @@ extension AlertRule {
     /// 50 mA for 1 min", "Meter disconnected for 1 min while recording".
     func summary(formatter: MetricFormatter) -> String {
         let locale = formatter.locale
+        func v(_ x: Double) -> String { AlertFormat.value(x, metric, formatter: formatter) }
         switch kind {
         case .voltageDrop:
-            let drop = formatter.format(above ?? 0, .voltage).text
-            return "Voltage drops \(drop) within \(AlertFormat.span(ThresholdMonitor.dropWindow, locale: locale))"
+            return "Voltage drops \(v(above ?? 0)) within \(AlertFormat.span(ThresholdMonitor.dropWindow, locale: locale))"
         case .disconnected:
             return "Meter disconnected for \(AlertFormat.span(forSeconds, locale: locale)) while recording"
         case .threshold:
             let duration = forSeconds > 0 ? " for \(AlertFormat.span(forSeconds, locale: locale))" : ""
             switch (above, below) {
             case let (a?, b?):
-                return "\(metric.title) outside \(formatter.format(b, metric).text) to \(formatter.format(a, metric).text)\(duration)"
+                return "\(metric.title) outside \(v(b)) to \(v(a))\(duration)"
             case let (a?, nil):
-                return "\(metric.title) above \(formatter.format(a, metric).text)\(duration)"
+                return "\(metric.title) above \(v(a))\(duration)"
             case let (nil, b?):
-                return "\(metric.title) below \(formatter.format(b, metric).text)\(duration)"
+                return "\(metric.title) below \(v(b))\(duration)"
             case (nil, nil):
                 return "\(metric.title) (no limit set)"
             }
@@ -438,7 +438,7 @@ final class AlertCoordinator: SampleObserver {
     private func notifyRecordingStopped(name: String, energyWh: Double, reason: AutoStopRule.Reason?) {
         endRecordingWatch()
         guard !notifier.isAppActive else { return }
-        var body = "Recording finished · \(prefs.formatter.energy(energyWh).text)"
+        var body = "Recording finished · \(AlertFormat.energy(energyWh, formatter: prefs.formatter))"
         if let reason {
             let detail = prefs.defaultAutoStop?.description(of: reason, formatter: prefs.formatter) ?? reason.label
             body += " (stopped: \(detail))"

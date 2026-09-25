@@ -1,6 +1,11 @@
 import Foundation
 
 /// Prose helpers shared by alert and auto-stop text.
+///
+/// Readouts show a fixed number of significant digits ("3.500 A") so columns
+/// stay put; sentences read better without the trailing zeros ("3.5 A"), so
+/// these helpers format with *up to* the formatter's precision. Units, SI
+/// auto-ranging and locale follow the `MetricFormatter` they are given.
 enum AlertFormat {
     /// A short, locale-aware duration for prose: "45 sec", "1 min", "1 hr, 30 min".
     static func span(_ seconds: TimeInterval, locale: Locale = .autoupdatingCurrent) -> String {
@@ -8,6 +13,27 @@ enum AlertFormat {
         return Duration.seconds(whole).formatted(
             .units(allowed: [.hours, .minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)
                 .locale(locale))
+    }
+
+    /// A metric value for prose: "20.5 V", "50 mA", "36 W".
+    static func value(_ v: Double, _ m: Metric, formatter: MetricFormatter) -> String {
+        guard v.isFinite else { return formatter.format(v, m).text }
+        let range = formatter.autoRange ? UnitRange.range(for: v, metric: m, previous: nil) : .base
+        switch range {
+        case .base: return significant(v, formatter) + " " + m.symbol
+        case .milli: return significant(v * 1000, formatter) + " m" + m.symbol
+        }
+    }
+
+    /// Energy for prose: "27.4 Wh", "500 mWh".
+    static func energy(_ wh: Double, formatter: MetricFormatter) -> String {
+        guard wh.isFinite else { return formatter.energy(wh).text }
+        if formatter.autoRange, abs(wh) < 1 { return significant(wh * 1000, formatter) + " mWh" }
+        return significant(wh, formatter) + " Wh"
+    }
+
+    private static func significant(_ v: Double, _ f: MetricFormatter) -> String {
+        v.formatted(.number.precision(.significantDigits(1...max(1, f.precision))).grouping(.never).locale(f.locale))
     }
 }
 
@@ -231,8 +257,9 @@ struct ThresholdMonitor {
             states[i].armed = false
             states[i].lastFired = now
             let window = AlertFormat.span(Self.dropWindow, locale: formatter.locale)
-            let message = "Voltage dropped \(formatter.format(drop, .voltage).text) within \(window)"
-                + " (from \(formatter.format(peak, .voltage).text) to \(formatter.format(r.voltage, .voltage).text))"
+            let message = "Voltage dropped \(AlertFormat.value(drop, .voltage, formatter: formatter)) within \(window)"
+                + " (from \(AlertFormat.value(peak, .voltage, formatter: formatter))"
+                + " to \(AlertFormat.value(r.voltage, .voltage, formatter: formatter)))"
             events.append(AlertEvent(ruleID: rule.id, title: rule.name, message: message,
                                      firedAt: now, metric: .voltage, value: drop))
         } else if drop <= delta * (1 - Self.rearmMargin) {
@@ -242,8 +269,8 @@ struct ThresholdMonitor {
 
     private func thresholdMessage(_ rule: AlertRule, value: Double, bound: Double?, above: Bool) -> String {
         let metric = rule.metric
-        let v = formatter.format(value, metric).text
-        let b = bound.map { formatter.format($0, metric).text } ?? "the limit"
+        let v = AlertFormat.value(value, metric, formatter: formatter)
+        let b = bound.map { AlertFormat.value($0, metric, formatter: formatter) } ?? "the limit"
         let relation = above ? "above" : "below"
         if rule.forSeconds > 0 {
             let span = AlertFormat.span(rule.forSeconds, locale: formatter.locale)
