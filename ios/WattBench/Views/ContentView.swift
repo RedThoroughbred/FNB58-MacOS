@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 /// App shell: the two tabs, keep-awake, and the preferences that have to be
