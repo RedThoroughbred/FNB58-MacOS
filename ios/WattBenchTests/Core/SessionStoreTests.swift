@@ -130,7 +130,7 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(store.summaries.first?.schemaVersion, Session.currentSchema)
     }
 
-    func testInterruptedIsNilInFoundationLayout() throws {
+    func testInterruptedIsNilWithoutRecordingFolders() throws {
         let store = SessionStore(directory: dir)
         XCTAssertNil(store.interrupted)
         try store.keepInterrupted()

@@ -1,7 +1,9 @@
 import Foundation
 
 /// Anything that produces readings for `MeterManager.ingest`: the BLE
-/// notification path, the demo generator, a fixture replay in tests.
+/// notification path, the demo generator, a fixture replay in tests. Sources
+/// live on the main actor like the manager that consumes them.
+@MainActor
 protocol MeterSource: AnyObject {
     var onReading: ((Reading) -> Void)? { get set }
     func start()

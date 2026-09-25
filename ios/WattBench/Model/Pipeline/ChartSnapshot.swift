@@ -15,7 +15,10 @@ struct ChartSnapshot: Equatable {
     static let empty = ChartSnapshot(points: [], publishedAt: .distantPast, gaps: [])
 
     /// Builds a snapshot from time-ordered readings, windowing to the last
-    /// `windowSeconds` and detecting gaps.
+    /// `windowSeconds` and detecting gaps. When `publishedAt` is more than
+    /// `SessionStats.maxGapS` after the newest reading (the stream has
+    /// stalled: meter off, out of range) a trailing gap up to `publishedAt`
+    /// is included so the chart can draw the outage while it is happening.
     static func make(from readings: [Reading], at publishedAt: Date) -> ChartSnapshot {
         let window = Array(Decimator.window(readings, seconds: windowSeconds))
         var gaps: [DateInterval] = []
@@ -31,6 +34,15 @@ struct ChartSnapshot: Equatable {
             }
             previous = r
         }
+        if let last = window.last, publishedAt.timeIntervalSince(last.timestamp) > SessionStats.maxGapS {
+            gaps.append(DateInterval(start: last.timestamp, end: publishedAt))
+        }
         return ChartSnapshot(points: window, publishedAt: publishedAt, gaps: gaps)
+    }
+
+    /// The gap that is still open at `publishedAt`, if the stream has stalled.
+    var openGap: DateInterval? {
+        guard let last = gaps.last, let newest = points.last, last.end > newest.timestamp else { return nil }
+        return last
     }
 }
