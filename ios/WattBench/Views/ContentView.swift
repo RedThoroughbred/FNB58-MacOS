@@ -1,35 +1,42 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(AppRouter.self) private var router
+
     var body: some View {
-        TabView {
+        @Bindable var router = router
+        TabView(selection: $router.tab) {
             LiveView()
                 .tabItem { Label("Live", systemImage: "waveform.path.ecg") }
+                .tag(AppRouter.Tab.live)
             HistoryView()
                 .tabItem { Label("Sessions", systemImage: "clock.arrow.circlepath") }
+                .tag(AppRouter.Tab.sessions)
         }
     }
 }
 
-// MARK: - Formatting helpers shared by the views
+// MARK: - Legacy formatting shim
 
+/// Deprecated: the 1.0 views' helpers, now forwarding to `MetricFormatter`.
+/// New code uses `MetricFormatter` (via `Preferences.formatter`) directly.
+/// Deleted in the post-merge cleanup once no callers remain.
 enum Fmt {
+    private static let formatter = MetricFormatter(precision: 4)
+
     static func value(_ v: Double?, _ digits: Int = 3) -> String {
-        guard let v, v.isFinite else { return "--" }
-        return String(format: "%.\(digits)f", v)
+        formatter.number(v, fractionDigits: digits)
     }
 
     static func duration(_ s: TimeInterval) -> String {
-        let t = Int(s.rounded(.down))
-        if t >= 3600 { return String(format: "%d:%02d:%02d", t / 3600, (t % 3600) / 60, t % 60) }
-        return String(format: "%02d:%02d", t / 60, t % 60)
+        formatter.duration(s)
     }
 
     static func energy(_ wh: Double) -> String {
-        wh < 1 ? String(format: "%.1f mWh", wh * 1000) : String(format: "%.3f Wh", wh)
+        formatter.energy(wh).text
     }
 
     static func capacity(_ ah: Double) -> String {
-        ah < 1 ? String(format: "%.1f mAh", ah * 1000) : String(format: "%.3f Ah", ah)
+        formatter.capacity(ah).text
     }
 }

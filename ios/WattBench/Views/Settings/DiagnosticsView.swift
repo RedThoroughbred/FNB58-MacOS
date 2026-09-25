@@ -5,7 +5,6 @@ import SwiftUI
 struct DiagnosticsView: View {
     @Environment(MeterManager.self) private var meter
     @Environment(\.dismiss) private var dismiss
-    @State private var showShare = false
     @State private var copied = false
 
     private static let timeFormat: DateFormatter = {
@@ -66,13 +65,15 @@ struct DiagnosticsView: View {
                     Button(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc") {
                         UIPasteboard.general.string = meter.diagnosticsText
                         copied = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
+                        Task {
+                            try? await Task.sleep(for: .seconds(1.5))
+                            copied = false
+                        }
                     }
-                    Button("Share", systemImage: "square.and.arrow.up") { showShare = true }
+                    ShareLink(item: meter.diagnosticsText) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
                 }
-            }
-            .sheet(isPresented: $showShare) {
-                ShareSheet(items: [meter.diagnosticsText])
             }
         }
     }

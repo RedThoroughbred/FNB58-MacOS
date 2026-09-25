@@ -9,6 +9,7 @@ settings:
   base:
     DEVELOPMENT_TEAM: CC8X33MU92
     SWIFT_VERSION: "5.10"
+    SWIFT_STRICT_CONCURRENCY: targeted
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 targets:
@@ -17,6 +18,8 @@ targets:
     platform: iOS
     sources:
       - path: WattBench
+        excludes:
+          - "**/.gitkeep"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.thebench.wattbench
@@ -26,16 +29,20 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_CFBundleDisplayName: WattBench
         TARGETED_DEVICE_FAMILY: "1"
-        MARKETING_VERSION: "1.0"
+        MARKETING_VERSION: "1.1"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: YES
     info:
       path: WattBench/Info.plist
       properties:
-        NSBluetoothAlwaysUsageDescription: Bluetooth is used to connect to your FNIRSI FNB58 power meter and receive its live voltage, current and power readings.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSBluetoothAlwaysUsageDescription: Bluetooth is used to connect to your FNIRSI FNB58 power meter and receive its live voltage, current and power readings. While a recording is in progress the connection stays active in the background so the recording continues with the screen locked.
         ITSAppUsesNonExemptEncryption: false
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+        UIBackgroundModes:
+          - bluetooth-central
         UIRequiresFullScreen: false
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
@@ -44,6 +51,8 @@ targets:
     platform: iOS
     sources:
       - path: WattBenchTests
+        excludes:
+          - "**/.gitkeep"
     dependencies:
       - target: WattBench
     settings:

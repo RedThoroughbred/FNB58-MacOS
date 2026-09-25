@@ -1,106 +1,122 @@
 import Foundation
 import Observation
 
-/// Accumulates readings for one recording session.
+/// Accumulates readings, markers and statistics for one recording, evaluates
+/// the auto-stop rule and keeps a 1 Hz mean-power series for the sparkline.
+///
+/// Foundation keeps every reading in memory and `journal` is nil; WS-A routes
+/// samples into a `RecordingJournal` and drops the in-memory array.
+@MainActor
 @Observable
 final class SessionRecorder {
     let id = UUID()
     let name: String
     let deviceName: String?
+    let tags: [String]
+    let notes: String?
+    let isDemo: Bool
     let startTime = Date()
     private(set) var stats = SessionStats()
     private(set) var readings: [Reading] = []
+    private(set) var markers: [Marker] = []
+    /// Mean power for each second since the first sample (0 for seconds
+    /// without samples).
+    private(set) var sparkline: [Float] = []
+    var autoStop: AutoStopRule?
+    /// Set once the auto-stop rule fires.
+    private(set) var autoStopReason: AutoStopRule.Reason?
+    @ObservationIgnored var journal: RecordingJournal?
 
-    init(name: String, deviceName: String?) {
+    @ObservationIgnored private var firstSampleTime: TimeInterval?
+    @ObservationIgnored private var bucketIndex = 0
+    @ObservationIgnored private var bucketSum = 0.0
+    @ObservationIgnored private var bucketCount = 0
+
+    init(name: String, deviceName: String?, tags: [String] = [], notes: String? = nil,
+         autoStop: AutoStopRule? = nil, isDemo: Bool = false) {
         self.name = name.trimmingCharacters(in: .whitespaces)
         self.deviceName = deviceName
+        self.tags = tags
+        self.notes = notes
+        self.autoStop = autoStop
+        self.isDemo = isDemo
     }
 
+    /// Wall-clock seconds since the recording started.
     var elapsed: TimeInterval { Date().timeIntervalSince(startTime) }
 
-    func add(_ r: Reading) {
+    func addMarker(label: String, kind: Marker.Kind = .user) {
+        markers.append(Marker(timestamp: Date(), label: label, kind: kind))
+    }
+
+    /// Adds one sample. Returns the auto-stop reason when the rule fired on
+    /// this sample (the caller stops the recording).
+    func add(_ r: Reading) -> AutoStopRule.Reason? {
+        let dt = stats.dt(to: r)
+        stats.add(r, dt: dt)
         readings.append(r)
-        stats.add(r)
+        journal?.append(r)
+        if dt > SessionStats.maxGapS {
+            markers.append(Marker(timestamp: r.timestamp, label: Self.gapLabel(dt), kind: .gap))
+        }
+        accumulateSparkline(r)
+        if autoStop != nil, autoStopReason == nil, let reason = autoStop?.evaluate(r, dt: dt, stats: stats) {
+            autoStopReason = reason
+            markers.append(Marker(timestamp: r.timestamp, label: "Auto-stop: \(reason.label)", kind: .autoStop))
+            return reason
+        }
+        return nil
     }
 
     func finish() -> Session {
-        Session(id: id,
-                name: name.isEmpty ? "Session" : name,
-                startTime: startTime,
-                endTime: Date(),
-                deviceName: deviceName,
-                stats: stats,
-                readings: readings)
-    }
-}
-
-/// Persists sessions as JSON files in the app's Documents directory (visible in
-/// the Files app because UIFileSharingEnabled is set).
-@Observable
-final class SessionStore {
-    private(set) var sessions: [Session] = []
-    private(set) var loadError: String?
-
-    private let directory: URL
-    // Seconds-since-1970 keeps full sub-second precision (ISO8601 truncates to
-    // whole seconds, which would break the 10 ms sample spacing on reload).
-    private let encoder: JSONEncoder = {
-        let e = JSONEncoder()
-        e.dateEncodingStrategy = .secondsSince1970
-        return e
-    }()
-    private let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.dateDecodingStrategy = .secondsSince1970
-        return d
-    }()
-
-    init(directory: URL? = nil) {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        self.directory = directory ?? docs.appendingPathComponent("sessions", isDirectory: true)
-        try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
-        load()
+        flushSparklineBucket()
+        return Session(id: id,
+                       name: name.isEmpty ? "Session" : name,
+                       startTime: startTime,
+                       endTime: Date(),
+                       deviceName: deviceName,
+                       stats: stats,
+                       readings: readings,
+                       markers: markers,
+                       tags: tags,
+                       notes: notes,
+                       autoStopReason: autoStopReason?.rawValue,
+                       isDemo: isDemo,
+                       sparkline: sparkline)
     }
 
-    func load() {
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
-                .filter { $0.pathExtension == "json" }
-            var loaded: [Session] = []
-            for f in files {
-                if let s = try? decoder.decode(Session.self, from: Data(contentsOf: f)) {
-                    loaded.append(s)
-                }
-            }
-            sessions = loaded.sorted { $0.startTime > $1.startTime }
-            loadError = nil
-        } catch {
-            loadError = error.localizedDescription
+    // MARK: - Sparkline (1 Hz mean power)
+
+    private func accumulateSparkline(_ r: Reading) {
+        let t = r.monotonic > 0 ? r.monotonic : r.timestamp.timeIntervalSinceReferenceDate
+        guard let first = firstSampleTime else {
+            firstSampleTime = t
+            bucketIndex = 0
+            bucketSum = r.power
+            bucketCount = 1
+            return
         }
+        let second = Int(max(0, t - first))
+        if second > bucketIndex {
+            flushSparklineBucket()
+            // Seconds with no samples (gaps) read as 0 W.
+            let missing = second - bucketIndex - 1
+            if missing > 0 { sparkline.append(contentsOf: repeatElement(0, count: missing)) }
+            bucketIndex = second
+        }
+        bucketSum += r.power
+        bucketCount += 1
     }
 
-    func save(_ session: Session) throws {
-        let data = try encoder.encode(session)
-        try data.write(to: url(for: session), options: .atomic)
-        sessions.removeAll { $0.id == session.id }
-        sessions.insert(session, at: 0)
-        sessions.sort { $0.startTime > $1.startTime }
+    private func flushSparklineBucket() {
+        guard bucketCount > 0 else { return }
+        sparkline.append(Float(bucketSum / Double(bucketCount)))
+        bucketSum = 0
+        bucketCount = 0
     }
 
-    func delete(_ session: Session) {
-        try? FileManager.default.removeItem(at: url(for: session))
-        sessions.removeAll { $0.id == session.id }
-    }
-
-    /// Writes a CSV next to the JSON and returns its URL for the share sheet.
-    func csvURL(for session: Session) throws -> URL {
-        let safe = session.name.replacingOccurrences(of: "[^A-Za-z0-9_-]+", with: "_", options: .regularExpression)
-        let url = directory.appendingPathComponent("\(safe)_\(session.id.uuidString.prefix(8)).csv")
-        try session.csv().write(to: url, atomically: true, encoding: .utf8)
-        return url
-    }
-
-    private func url(for session: Session) -> URL {
-        directory.appendingPathComponent("\(session.id.uuidString).json")
+    static func gapLabel(_ dt: TimeInterval) -> String {
+        let s = Int(dt.rounded())
+        return s >= 60 ? "Gap \(s / 60) m \(s % 60) s" : "Gap \(s) s"
     }
 }

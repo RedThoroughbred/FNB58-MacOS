@@ -518,18 +518,47 @@ python start.py
 ```bash
 python -m pytest                      # backend: decoders, DeviceManager, Flask API (no hardware needed)
 python test_setup.py                  # dependency sanity check
-cd ios && xcodegen generate && \
+cd ios && xcodegen generate -q && \
   xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'   # iOS unit tests
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -derivedDataPath build                                       # iOS unit tests
 ```
 
 ### iOS App (`ios/`)
-Native SwiftUI + CoreBluetooth app (iOS 17+), generated from `ios/project.yml` with
+Native SwiftUI + CoreBluetooth app (iOS 17+, Swift 5 language mode, `SWIFT_STRICT_CONCURRENCY`
+targeted), generated from `ios/project.yml` with
 [xcodegen](https://github.com/yonaskolb/XcodeGen). It talks to the meter directly over BLE
 (no Flask server involved), so it only gets V/I/W. `FNB58Protocol.swift` mirrors
-`device/bluetooth_reader.py`; keep them in sync. Sessions are JSON in the app's Documents
-directory (visible in Files); CSV export goes through the share sheet. In the Simulator use
-"Use demo data" - it has no Bluetooth radio.
+`device/bluetooth_reader.py`; keep them in sync. Sessions live in the app's Documents
+directory (visible in Files); CSV exports are written to a temporary folder and shared with
+`ShareLink`. In the Simulator use "Try with demo data" - it has no Bluetooth radio.
+
+**Build rules**
+- `ios/WattBench.xcodeproj` is generated and **not tracked** (`.gitignore`). Run
+  `xcodegen generate -q` before every build (`release.sh` and `run-on-phone.sh` already do).
+  Never edit `project.pbxproj`; add files by putting them in a folder that `project.yml`
+  covers (`WattBench/`, `WattBenchTests/`) - xcodegen picks up folders, `.gitkeep` is excluded.
+- Version numbers come from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
+  (Info.plist references `$(MARKETING_VERSION)` and `$(CURRENT_PROJECT_VERSION)`).
+- The root `.gitignore` ignores `*.json`; `ios/WattBench/**` and `ios/WattBenchTests/**` are
+  re-included so asset catalogs and test fixtures are tracked.
+- Never run two `xcodebuild`s at once. The 1.1 workstreams each test on their **own**
+  simulator to avoid install races: WS-A iPhone 17 Pro Max, WS-B iPhone 17 Pro, WS-C
+  iPhone 17, WS-D iPhone Air, WS-E iPhone 17e (`xcrun simctl list devices`; if a name is
+  ambiguous pass `-destination 'platform=iOS Simulator,id=<udid>'`).
+
+**Layout (1.1 foundation, see `ios/PLAN/00-foundation.md`)**
+- `Bluetooth/` MeterManager (CoreBluetooth only), FNB58Protocol, MeterSource + ConnectionState
+- `Model/Reading.swift` Reading, SessionStats, Marker, Session; `Model/SessionRecorder.swift`
+- `Model/Pipeline/` SamplePipeline (DisplayFrame + ChartSnapshot at <= 5 Hz), RingBuffer,
+  TripMeter, Extremes, AutoStopRule, SampleObserver, ReconnectPolicy, MonotonicClock
+- `Model/Storage/` SessionStore (summaries first), SessionSummary, RecordingJournal (`.wbj`)
+- `Model/Analysis/` Decimator; `Model/Format/` Metric, MetricFormatter, Preferences, AppRouter
+- `Alerts/` AlertCoordinator (+ AlertRule/AlertEvent); `Views/{Live,Sessions,Connect,Settings,Alerts,Components}`
+- Every stop of a recording goes through `MeterManager.stopRecording`, whose
+  `onRecordingStopped` hook (wired in `WattBenchApp`) saves through `SessionStore`.
+- Tests mirror the folders under `WattBenchTests/` (`Core/`, `Format/`, `Alerts/`, ...);
+  fixtures in `WattBenchTests/Fixtures/` are loaded with `Bundle(for:)`.
 
 ### Connect to Device
 ```bash

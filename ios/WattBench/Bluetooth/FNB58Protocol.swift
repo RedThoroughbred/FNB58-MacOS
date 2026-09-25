@@ -26,8 +26,9 @@ enum FNB58Protocol {
 
     /// Parse one notification frame. Returns nil for short frames or
     /// out-of-range voltages (the meter occasionally emits status frames on
-    /// the same characteristic).
-    static func parse(_ data: Data, at timestamp: Date = Date()) -> Reading? {
+    /// the same characteristic). `monotonic` is the `MonotonicClock` stamp
+    /// for live frames (0 = none).
+    static func parse(_ data: Data, at timestamp: Date = Date(), monotonic: TimeInterval = 0) -> Reading? {
         guard data.count >= frameOffset + 12 else { return nil }
         let base = data.startIndex + frameOffset
         func int32(_ i: Int) -> Int32 {
@@ -39,6 +40,6 @@ enum FNB58Protocol {
         let current = Double(int32(1)) / scale
         let power = Double(int32(2)) / scale
         guard voltageRange.contains(voltage) else { return nil }
-        return Reading(timestamp: timestamp, voltage: voltage, current: current, power: power)
+        return Reading(timestamp: timestamp, voltage: voltage, current: current, power: power, monotonic: monotonic)
     }
 }

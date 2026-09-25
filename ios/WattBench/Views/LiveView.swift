@@ -9,7 +9,6 @@ struct LiveView: View {
     @State private var showDiagnostics = false
     @State private var showNamePrompt = false
     @State private var sessionName = ""
-    @State private var saveError: String?
     @State private var windowSeconds = 30.0
 
     var body: some View {
@@ -51,9 +50,9 @@ struct LiveView: View {
                 Button("Start") { meter.startRecording(name: sessionName) }
                 Button("Cancel", role: .cancel) {}
             }
-            .alert("Could not save session", isPresented: .init(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
+            .alert("Could not save session", isPresented: .init(get: { store.saveError != nil }, set: { if !$0 { store.saveError = nil } })) {
                 Button("OK", role: .cancel) {}
-            } message: { Text(saveError ?? "") }
+            } message: { Text(store.saveError ?? "") }
         }
     }
 
@@ -109,14 +108,9 @@ struct LiveView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
+    /// The chart snapshot (published at most 5 Hz) trimmed to the chosen window.
     private var windowedHistory: [Reading] {
-        guard let last = meter.history.last else { return [] }
-        let cutoff = last.timestamp.addingTimeInterval(-windowSeconds)
-        // history is time-ordered; find the first index inside the window.
-        if let idx = meter.history.firstIndex(where: { $0.timestamp >= cutoff }) {
-            return Array(meter.history[idx...])
-        }
-        return meter.history
+        Array(Decimator.window(meter.chart.points, seconds: windowSeconds))
     }
 
     private func chartCard(title: String, unit: String, color: Color, _ key: @escaping (Reading) -> Double) -> some View {
@@ -204,8 +198,9 @@ struct LiveView: View {
         }
     }
 
+    /// Stopping hands the session to `MeterManager.onRecordingStopped`, which
+    /// saves it (and reports failures through `store.saveError`).
     private func stopAndSave() {
-        guard let session = meter.stopRecording() else { return }
-        do { try store.save(session) } catch { saveError = error.localizedDescription }
+        meter.stopRecording()
     }
 }

@@ -75,7 +75,7 @@ This app is a Bluetooth companion for a physical piece of test equipment, the FN
 
 To evaluate every screen without the hardware: tap **Connect**, then **Try with demo data**. The app then streams simulated readings, clearly labeled "Demo data" in the status banner. From there you can start a recording, stop it, open it under the Sessions tab and export it as CSV — the exact flow a user follows with a real meter.
 
-The app uses Bluetooth only in the foreground, makes no network requests, has no accounts, and stores recordings only in its own Documents folder.
+The app declares the `bluetooth-central` background mode so that a recording in progress keeps receiving samples from the meter while the phone is locked (multi-hour charge and drain tests). It never scans in the background, makes no network requests, has no accounts, and stores recordings only in its own Documents folder.
 
 ## Screenshots
 
