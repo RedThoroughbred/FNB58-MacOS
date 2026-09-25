@@ -6,6 +6,7 @@ struct LiveView: View {
     @Environment(SessionStore.self) private var store
 
     @State private var showDevices = false
+    @State private var showDiagnostics = false
     @State private var showNamePrompt = false
     @State private var sessionName = ""
     @State private var saveError: String?
@@ -36,12 +37,15 @@ struct LiveView: View {
                             Text("2 min").tag(120.0)
                         }
                         Button("Clear chart", systemImage: "eraser") { meter.clearHistory() }
+                        Divider()
+                        Button("Diagnostics", systemImage: "stethoscope") { showDiagnostics = true }
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                     }
                 }
             }
             .sheet(isPresented: $showDevices) { DeviceListView() }
+            .sheet(isPresented: $showDiagnostics) { DiagnosticsView() }
             .alert("Name this session", isPresented: $showNamePrompt) {
                 TextField("e.g. iPhone charge test", text: $sessionName)
                 Button("Start") { meter.startRecording(name: sessionName) }

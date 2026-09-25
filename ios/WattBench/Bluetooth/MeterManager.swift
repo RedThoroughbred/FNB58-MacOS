@@ -10,6 +10,13 @@ struct DiscoveredDevice: Identifiable, Equatable {
     var lastSeen: Date
 }
 
+/// One line in the diagnostics log.
+struct LogEntry: Identifiable {
+    let id = UUID()
+    let time: Date
+    let message: String
+}
+
 enum ConnectionState: Equatable {
     case bluetoothOff
     case unauthorized
@@ -55,13 +62,23 @@ final class MeterManager: NSObject {
         didSet { if state == .scanning { restartScan() } }
     }
 
+    // MARK: Diagnostics (visible in the Diagnostics screen; no Xcode needed)
+    private(set) var log: [LogEntry] = []
+    private(set) var discoveredGATT: [String] = []
+    private(set) var framesReceived = 0
+    private(set) var framesParsed = 0
+    private(set) var lastFrameHex = ""
+
     static let historyLimit = 1200
+    private static let logLimit = 400
     private static let lastDeviceKey = "lastDeviceIdentifier"
 
     // MARK: Private
     private var central: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var writeCharacteristic: CBCharacteristic?
+    private var notifyCharacteristic: CBCharacteristic?
+    private var didStartStreaming = false
     private var wantsAutoReconnect = false
     private var demoTimer: Timer?
     private var demoPhase = 0.0
@@ -70,14 +87,19 @@ final class MeterManager: NSObject {
         super.init()
         central = CBCentralManager(delegate: self, queue: .main,
                                    options: [CBCentralManagerOptionShowPowerAlertKey: false])
+        logEvent("App started")
     }
 
     // MARK: - Public API
 
     func startScan() {
-        guard central.state == .poweredOn else { return }
+        guard central.state == .poweredOn else {
+            logEvent("Scan requested but Bluetooth state is \(central.state.rawValue)")
+            return
+        }
         devices.removeAll()
         state = .scanning
+        logEvent("Scanning (filter: \(showAllDevices ? "all names" : "contains \(FNB58Protocol.nameFilter)"))")
         // The FNB58 does not reliably include FFE0 in its advertisement, so scan
         // for everything and filter by name.
         central.scanForPeripherals(withServices: nil,
@@ -92,6 +114,7 @@ final class MeterManager: NSObject {
     func connect(_ device: DiscoveredDevice) {
         guard let p = central.retrievePeripherals(withIdentifiers: [device.id]).first else {
             lastError = "Device is no longer available"
+            logEvent("connect: peripheral \(device.id) not retrievable")
             return
         }
         connect(peripheral: p, name: device.name)
@@ -101,6 +124,7 @@ final class MeterManager: NSObject {
         wantsAutoReconnect = false
         stopDemo()
         if let p = peripheral {
+            logEvent("Disconnecting from \(p.name ?? p.identifier.uuidString)")
             central.cancelPeripheralConnection(p)
         }
         cleanupConnection()
@@ -112,7 +136,10 @@ final class MeterManager: NSObject {
         guard central.state == .poweredOn,
               let s = UserDefaults.standard.string(forKey: Self.lastDeviceKey),
               let id = UUID(uuidString: s),
-              let p = central.retrievePeripherals(withIdentifiers: [id]).first else { return }
+              let p = central.retrievePeripherals(withIdentifiers: [id]).first else {
+            logEvent("reconnectLastDevice: nothing to reconnect to")
+            return
+        }
         connect(peripheral: p, name: p.name ?? "FNB58")
     }
 
@@ -122,11 +149,13 @@ final class MeterManager: NSObject {
 
     func startRecording(name: String) {
         recording = SessionRecorder(name: name, deviceName: state.label)
+        logEvent("Recording started: \(name)")
     }
 
     @discardableResult
     func stopRecording() -> Session? {
         defer { recording = nil }
+        logEvent("Recording stopped (\(recording?.readings.count ?? 0) samples)")
         return recording?.finish()
     }
 
@@ -134,11 +163,33 @@ final class MeterManager: NSObject {
         history.removeAll()
     }
 
-    // MARK: - Demo source (simulator has no Bluetooth)
+    func clearLog() {
+        log.removeAll()
+        framesReceived = 0
+        framesParsed = 0
+        lastFrameHex = ""
+    }
+
+    /// Plain-text dump for copy/share.
+    var diagnosticsText: String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss.SSS"
+        var out = "WattBench diagnostics\n"
+        out += "State: \(state.label)\n"
+        if let e = lastError { out += "Last error: \(e)\n" }
+        out += "Frames received: \(framesReceived), parsed: \(framesParsed)\n"
+        out += "Last frame: \(lastFrameHex)\n"
+        out += "GATT:\n" + discoveredGATT.map { "  " + $0 }.joined(separator: "\n") + "\n"
+        out += "Log:\n" + log.map { "  \(f.string(from: $0.time)) \($0.message)" }.joined(separator: "\n")
+        return out
+    }
+
+    // MARK: - Demo source (also lets App Review see the UI without a meter)
 
     func startDemo() {
         disconnect()
         state = .demo
+        logEvent("Demo data started")
         demoTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self else { return }
             demoPhase += 0.1
@@ -163,7 +214,10 @@ final class MeterManager: NSObject {
         p.delegate = self
         wantsAutoReconnect = true
         lastError = nil
+        discoveredGATT.removeAll()
+        didStartStreaming = false
         state = .connecting(name)
+        logEvent("Connecting to \(name) (\(p.identifier.uuidString.prefix(8)))")
         central.connect(p, options: nil)
     }
 
@@ -176,6 +230,24 @@ final class MeterManager: NSObject {
         peripheral?.delegate = nil
         peripheral = nil
         writeCharacteristic = nil
+        notifyCharacteristic = nil
+        didStartStreaming = false
+    }
+
+    /// Once both characteristics are known, enable notifications and send the
+    /// init commands. They may live in different services, so this is called
+    /// after every characteristic-discovery callback.
+    private func startStreamingIfReady(_ peripheral: CBPeripheral) {
+        guard !didStartStreaming, let w = writeCharacteristic, let n = notifyCharacteristic else { return }
+        didStartStreaming = true
+        peripheral.setNotifyValue(true, for: n)
+        let type: CBCharacteristicWriteType = w.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse
+        for cmd in FNB58Protocol.initCommands {
+            peripheral.writeValue(cmd, for: w, type: type)
+            logEvent("Wrote \(hex(cmd)) to \(w.uuid) (\(type == .withResponse ? "with" : "without") response)")
+        }
+        state = .connected(peripheral.name ?? "FNB58")
+        lastError = nil
     }
 
     fileprivate func ingest(_ r: Reading) {
@@ -189,8 +261,31 @@ final class MeterManager: NSObject {
 
     private func fail(_ message: String) {
         lastError = message
+        logEvent("ERROR: \(message)")
         cleanupConnection()
         state = central.state == .poweredOn ? .idle : state
+    }
+
+    private func logEvent(_ message: String) {
+        log.append(LogEntry(time: Date(), message: message))
+        if log.count > Self.logLimit {
+            log.removeFirst(log.count - Self.logLimit)
+        }
+    }
+
+    private func hex(_ data: Data, limit: Int = 64) -> String {
+        let shown = data.prefix(limit).map { String(format: "%02x", $0) }.joined(separator: " ")
+        return data.count > limit ? shown + " … (\(data.count) bytes)" : shown
+    }
+
+    private func describe(_ p: CBCharacteristicProperties) -> String {
+        var parts: [String] = []
+        if p.contains(.read) { parts.append("read") }
+        if p.contains(.write) { parts.append("write") }
+        if p.contains(.writeWithoutResponse) { parts.append("writeNoRsp") }
+        if p.contains(.notify) { parts.append("notify") }
+        if p.contains(.indicate) { parts.append("indicate") }
+        return parts.joined(separator: ",")
     }
 }
 
@@ -198,6 +293,7 @@ final class MeterManager: NSObject {
 
 extension MeterManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        logEvent("Bluetooth state: \(central.state.rawValue) (\(central.state == .poweredOn ? "on" : "not on"))")
         switch central.state {
         case .poweredOn:
             if state == .bluetoothOff || state == .unauthorized { state = .idle }
@@ -223,12 +319,15 @@ extension MeterManager: CBCentralManagerDelegate {
             devices[idx].lastSeen = now
         } else {
             devices.append(DiscoveredDevice(id: peripheral.identifier, name: name, rssi: RSSI.intValue, lastSeen: now))
+            let services = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.map(\.uuidString).joined(separator: ",") ?? "none"
+            logEvent("Found \(name) RSSI \(RSSI.intValue) adv services: \(services)")
         }
         devices.sort { $0.rssi > $1.rssi }
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         UserDefaults.standard.set(peripheral.identifier.uuidString, forKey: Self.lastDeviceKey)
+        logEvent("Connected to \(peripheral.name ?? "?"); discovering services")
         peripheral.discoverServices(nil)
     }
 
@@ -238,6 +337,7 @@ extension MeterManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         let name = peripheral.name ?? "FNB58"
+        logEvent("Disconnected from \(name)\(error.map { ": \($0.localizedDescription)" } ?? "")")
         cleanupConnection()
         if wantsAutoReconnect {
             // Unexpected drop (meter powered off, out of range): keep trying.
@@ -260,40 +360,60 @@ extension MeterManager: CBPeripheralDelegate {
         guard let services = peripheral.services, !services.isEmpty else {
             return fail("No services found on device")
         }
+        logEvent("Services: " + services.map { $0.uuid.uuidString }.joined(separator: ", "))
         for s in services {
-            peripheral.discoverCharacteristics([FNB58Protocol.writeUUID, FNB58Protocol.notifyUUID], for: s)
+            // Discover everything so the diagnostics screen shows the full GATT table.
+            peripheral.discoverCharacteristics(nil, for: s)
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if let error { return fail("Characteristic discovery failed: \(error.localizedDescription)") }
         for c in service.characteristics ?? [] {
+            discoveredGATT.append("\(service.uuid) → \(c.uuid) [\(describe(c.properties))]")
             if c.uuid == FNB58Protocol.writeUUID {
                 writeCharacteristic = c
             } else if c.uuid == FNB58Protocol.notifyUUID {
-                peripheral.setNotifyValue(true, for: c)
+                notifyCharacteristic = c
             }
         }
-        // Once both ends are known, kick off streaming.
-        if let w = writeCharacteristic,
-           service.characteristics?.contains(where: { $0.uuid == FNB58Protocol.notifyUUID }) == true {
-            let type: CBCharacteristicWriteType = w.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse
-            for cmd in FNB58Protocol.initCommands {
-                peripheral.writeValue(cmd, for: w, type: type)
-            }
-            state = .connected(peripheral.name ?? "FNB58")
-            lastError = nil
+        startStreamingIfReady(peripheral)
+        if !didStartStreaming, peripheral.services?.allSatisfy({ $0.characteristics != nil }) == true {
+            fail("Meter does not expose the expected characteristics (\(FNB58Protocol.writeUUID) / \(FNB58Protocol.notifyUUID)). See Diagnostics.")
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-        if let error { fail("Could not enable notifications: \(error.localizedDescription)") }
+        if let error {
+            fail("Could not enable notifications: \(error.localizedDescription)")
+        } else {
+            logEvent("Notifications \(characteristic.isNotifying ? "enabled" : "disabled") on \(characteristic.uuid)")
+        }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let error { logEvent("Write to \(characteristic.uuid) failed: \(error.localizedDescription)") }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard error == nil, characteristic.uuid == FNB58Protocol.notifyUUID,
-              let data = characteristic.value,
-              let reading = FNB58Protocol.parse(data) else { return }
+        if let error {
+            logEvent("Value update error on \(characteristic.uuid): \(error.localizedDescription)")
+            return
+        }
+        guard characteristic.uuid == FNB58Protocol.notifyUUID, let data = characteristic.value else { return }
+        framesReceived += 1
+        lastFrameHex = hex(data)
+        if framesReceived <= 5 {
+            logEvent("Frame #\(framesReceived) (\(data.count) B): \(lastFrameHex)")
+        }
+        guard let reading = FNB58Protocol.parse(data) else {
+            if framesReceived <= 5 { logEvent("Frame #\(framesReceived) rejected by parser") }
+            return
+        }
+        framesParsed += 1
+        if framesParsed == 1 {
+            logEvent(String(format: "First reading: %.4f V  %.4f A  %.4f W", reading.voltage, reading.current, reading.power))
+        }
         ingest(reading)
     }
 }

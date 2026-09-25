@@ -7,15 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0373A191BF5EF62ACF1C9093 /* WattBenchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2D0D3FB2EFA86B78C34FD8 /* WattBenchTests.swift */; };
 		08DFB83E56FAB060C505FD9C /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB196D69F06BFF514BBF7CB /* HistoryView.swift */; };
 		1DEE0D45F9030A3A15A01296 /* FNB58Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3B53D9E331D3C8B51E79DE /* FNB58Protocol.swift */; };
 		2EA6C8A16C369B177B779644 /* DeviceListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7668508DD8DD712644A3F3 /* DeviceListView.swift */; };
+		316ABAE3E92BFA96EEEE802B /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBCF9833CD49473618B1E634 /* DiagnosticsView.swift */; };
 		5E0E25C668EEC79B4BB4E859 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B98F3EF4E5B190797AFA8135 /* Assets.xcassets */; };
 		7C313462FEEFFF1642B29BFD /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C634CE2A7102D5B5837319CE /* LiveView.swift */; };
-		8D5B6C8974CAD465C974B56D /* FNB58MonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F00CDBC6093AC5FE21852B0 /* FNB58MonitorTests.swift */; };
 		AF121683692A5A44E03B461B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87F1D6FE4A0B38B975A19754 /* ContentView.swift */; };
 		B0F31D4226F6301213037410 /* Reading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222C4EBDC8C5DC575DC75850 /* Reading.swift */; };
-		B6AEDE9F85BEB6F4E039BA28 /* FNB58MonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B8E0F788C0E194EC1A3BFF /* FNB58MonitorApp.swift */; };
+		BA3104C493615E99834BAC62 /* WattBenchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE8A68132665A13031A905D2 /* WattBenchApp.swift */; };
 		C0B6D173C0593F42930FC673 /* MeterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0524DF23380EBA6FD858629 /* MeterManager.swift */; };
 		C9D635C2ABEF79BDBB3C4315 /* SessionRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E30AE5AF8BCBAA641ABDAA /* SessionRecorder.swift */; };
 		E126B343101C2A104D9DB63B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6FF3A12C5374917392492155 /* PrivacyInfo.xcprivacy */; };
@@ -33,19 +34,20 @@
 
 /* Begin PBXFileReference section */
 		108BE55C02CDD4C736A43221 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		1F00CDBC6093AC5FE21852B0 /* FNB58MonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FNB58MonitorTests.swift; sourceTree = "<group>"; };
 		222C4EBDC8C5DC575DC75850 /* Reading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reading.swift; sourceTree = "<group>"; };
 		24A468EB94168BD9574305D7 /* WattBench.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WattBench.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2F7668508DD8DD712644A3F3 /* DeviceListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceListView.swift; sourceTree = "<group>"; };
 		37B9C5F80FD3A522E972DE2B /* WattBenchTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WattBenchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CB196D69F06BFF514BBF7CB /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		56E30AE5AF8BCBAA641ABDAA /* SessionRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRecorder.swift; sourceTree = "<group>"; };
-		62B8E0F788C0E194EC1A3BFF /* FNB58MonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FNB58MonitorApp.swift; sourceTree = "<group>"; };
 		6FF3A12C5374917392492155 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		87F1D6FE4A0B38B975A19754 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A0524DF23380EBA6FD858629 /* MeterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterManager.swift; sourceTree = "<group>"; };
+		AE8A68132665A13031A905D2 /* WattBenchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WattBenchApp.swift; sourceTree = "<group>"; };
 		B98F3EF4E5B190797AFA8135 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C634CE2A7102D5B5837319CE /* LiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveView.swift; sourceTree = "<group>"; };
+		CBCF9833CD49473618B1E634 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
+		DB2D0D3FB2EFA86B78C34FD8 /* WattBenchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WattBenchTests.swift; sourceTree = "<group>"; };
 		EE3B53D9E331D3C8B51E79DE /* FNB58Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FNB58Protocol.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -63,9 +65,9 @@
 			isa = PBXGroup;
 			children = (
 				B98F3EF4E5B190797AFA8135 /* Assets.xcassets */,
-				62B8E0F788C0E194EC1A3BFF /* FNB58MonitorApp.swift */,
 				108BE55C02CDD4C736A43221 /* Info.plist */,
 				6FF3A12C5374917392492155 /* PrivacyInfo.xcprivacy */,
+				AE8A68132665A13031A905D2 /* WattBenchApp.swift */,
 				314DA6A69F75E267D7C77AC9 /* Bluetooth */,
 				03402D581C025491F24C794D /* Model */,
 				10C5860759B02C9EE3339F9A /* Views */,
@@ -78,6 +80,7 @@
 			children = (
 				87F1D6FE4A0B38B975A19754 /* ContentView.swift */,
 				2F7668508DD8DD712644A3F3 /* DeviceListView.swift */,
+				CBCF9833CD49473618B1E634 /* DiagnosticsView.swift */,
 				3CB196D69F06BFF514BBF7CB /* HistoryView.swift */,
 				C634CE2A7102D5B5837319CE /* LiveView.swift */,
 			);
@@ -114,7 +117,7 @@
 		EFB6B37C7DBC160048579331 /* WattBenchTests */ = {
 			isa = PBXGroup;
 			children = (
-				1F00CDBC6093AC5FE21852B0 /* FNB58MonitorTests.swift */,
+				DB2D0D3FB2EFA86B78C34FD8 /* WattBenchTests.swift */,
 			);
 			path = WattBenchTests;
 			sourceTree = "<group>";
@@ -214,7 +217,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D5B6C8974CAD465C974B56D /* FNB58MonitorTests.swift in Sources */,
+				0373A191BF5EF62ACF1C9093 /* WattBenchTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,13 +227,14 @@
 			files = (
 				AF121683692A5A44E03B461B /* ContentView.swift in Sources */,
 				2EA6C8A16C369B177B779644 /* DeviceListView.swift in Sources */,
-				B6AEDE9F85BEB6F4E039BA28 /* FNB58MonitorApp.swift in Sources */,
+				316ABAE3E92BFA96EEEE802B /* DiagnosticsView.swift in Sources */,
 				1DEE0D45F9030A3A15A01296 /* FNB58Protocol.swift in Sources */,
 				08DFB83E56FAB060C505FD9C /* HistoryView.swift in Sources */,
 				7C313462FEEFFF1642B29BFD /* LiveView.swift in Sources */,
 				C0B6D173C0593F42930FC673 /* MeterManager.swift in Sources */,
 				B0F31D4226F6301213037410 /* Reading.swift in Sources */,
 				C9D635C2ABEF79BDBB3C4315 /* SessionRecorder.swift in Sources */,
+				BA3104C493615E99834BAC62 /* WattBenchApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
