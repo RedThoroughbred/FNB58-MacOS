@@ -4,11 +4,9 @@ import SwiftUI
 struct LiveView: View {
     @Environment(MeterManager.self) private var meter
     @Environment(SessionStore.self) private var store
-    @Environment(AlertCoordinator.self) private var alertsTemp  // TEMP-WSE-SCREENSHOT
 
     @State private var showDevices = false
     @State private var showDiagnostics = false
-    @State private var showSettings = false  // TEMP-WSE-SCREENSHOT
     @State private var showNamePrompt = false
     @State private var sessionName = ""
     @State private var windowSeconds = 30.0
@@ -26,7 +24,6 @@ struct LiveView: View {
                 }
                 .padding()
             }
-            .safeAreaInset(edge: .top) { AlertBanner() }  // TEMP-WSE-SCREENSHOT
             .background(Color(.systemGroupedBackground))
             .navigationTitle("WattBench")
             .toolbar {
@@ -41,7 +38,6 @@ struct LiveView: View {
                         Button("Clear chart", systemImage: "eraser") { meter.clearHistory() }
                         Divider()
                         Button("Diagnostics", systemImage: "stethoscope") { showDiagnostics = true }
-                        Button("Settings", systemImage: "gear") { showSettings = true }  // TEMP-WSE-SCREENSHOT
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                     }
@@ -49,19 +45,6 @@ struct LiveView: View {
             }
             .sheet(isPresented: $showDevices) { DeviceListView() }
             .sheet(isPresented: $showDiagnostics) { DiagnosticsView() }
-            .sheet(isPresented: $showSettings) { SettingsView() }  // TEMP-WSE-SCREENSHOT
-            .onAppear {  // TEMP-WSE-SCREENSHOT
-                let args = ProcessInfo.processInfo.arguments
-                if args.contains("-wse-clear") { alertsTemp.rules = [] }
-                if args.contains("-wse-seed") { alertsTemp.rules = AlertPreset.usbC65W.rules + AlertPreset.powerBankDrain.rules }
-                if args.contains("-wse-seed-live") {
-                    var r = AlertRule(.overCurrent, value: 1.5)
-                    r.name = "Load limit"
-                    alertsTemp.rules = [r, AlertRule(.overPower, value: 15)]
-                }
-                if args.contains("-wse-demo") { meter.startDemo() }
-                if args.contains("-wse-settings") { showSettings = true }
-            }
             .alert("Name this session", isPresented: $showNamePrompt) {
                 TextField("e.g. iPhone charge test", text: $sessionName)
                 Button("Start") { meter.startRecording(name: sessionName) }
