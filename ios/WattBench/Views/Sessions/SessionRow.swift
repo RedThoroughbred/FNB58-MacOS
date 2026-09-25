@@ -17,7 +17,7 @@ struct SessionRow: View {
                     if summary.state == .recovered { SessionRecoveredBadge() }
                     if summary.isDemo { SessionDemoBadge() }
                 }
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Text(summary.startTime, format: .dateTime.hour().minute())
                     Text("·").foregroundStyle(.tertiary)
                     Text(f.duration(summary.stats.durationS))
@@ -27,6 +27,7 @@ struct SessionRow: View {
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 if !summary.tags.isEmpty {
                     SessionTagCapsules(tags: summary.tags)
                 }

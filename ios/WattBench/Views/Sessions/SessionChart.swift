@@ -283,6 +283,9 @@ struct SessionChart: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let plotHeight: CGFloat = 260
+    static let readoutHeadroom: CGFloat = 40
+
+    private var sortedMarkers: [Marker] { model.markers.sorted { $0.timestamp < $1.timestamp } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -301,7 +304,9 @@ struct SessionChart: View {
                     chart
                 }
             }
-            .frame(height: Self.plotHeight)
+            // The plot is `plotHeight` tall; the headroom above it holds the
+            // scrub readout so it never covers the trace.
+            .frame(height: Self.plotHeight + Self.readoutHeadroom)
 
             if model.availableSpans.count > 1 || model.currentSpan == nil {
                 spanPicker
@@ -342,20 +347,27 @@ struct SessionChart: View {
                 RectangleMark(xStart: .value("Gap start", g.start), xEnd: .value("Gap end", g.end))
                     .foregroundStyle(.secondary.opacity(0.15))
             }
-            ForEach(model.markers) { m in
+            // Labels sit inside the plot at the top, cycling through three
+            // rows so neighbouring markers do not cover each other.
+            ForEach(Array(sortedMarkers.enumerated()), id: \.element.id) { index, m in
                 let tint = Self.tint(for: m)
                 RuleMark(x: .value("Marker", m.timestamp))
                     .foregroundStyle(tint.opacity(0.8))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    .annotation(position: .top, alignment: .leading, spacing: 2,
-                                overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                    .annotation(position: .overlay, alignment: .topLeading, spacing: 0,
+                                overflowResolution: .init(x: .fit(to: .plot), y: .disabled)) {
                         Text(m.label)
                             .font(.caption2.weight(.medium))
                             .lineLimit(1)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .foregroundStyle(tint)
-                            .background(tint.opacity(0.12), in: Capsule())
+                            .background(tint.opacity(0.14), in: Capsule())
+                            .padding(.leading, 3)
+                            .padding(.top, 4 + CGFloat(index % 3) * 19)
+                            // The annotation frame is as wide as the rule;
+                            // keep the label at its natural size.
+                            .fixedSize()
                     }
             }
             if let range = model.range {
@@ -372,6 +384,7 @@ struct SessionChart: View {
                     .annotation(position: .top, spacing: 4,
                                 overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                         cursorReadout(r, formatter: f)
+                            .fixedSize()
                     }
             }
         }
@@ -385,7 +398,7 @@ struct SessionChart: View {
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                 AxisGridLine()
-                AxisValueLabel(format: axisFormat)
+                AxisValueLabel(format: axisFormat, collisionResolution: .greedy)
             }
         }
         .chartYAxis {
@@ -403,6 +416,8 @@ struct SessionChart: View {
                 }
             )
         }
+        // Headroom for the scrub readout, which floats above the plot.
+        .padding(.top, Self.readoutHeadroom)
         .simultaneousGesture(
             MagnifyGesture(minimumScaleDelta: 0.02)
                 .onChanged { value in
@@ -435,7 +450,7 @@ struct SessionChart: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .floatingChrome(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private func accessibilitySummary(formatter f: MetricFormatter) -> String {
@@ -470,6 +485,7 @@ struct SessionChart: View {
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
+        .padding(.top, Self.readoutHeadroom)
         .redacted(reason: isLoading ? .placeholder : [])
         .overlay {
             if isLoading {

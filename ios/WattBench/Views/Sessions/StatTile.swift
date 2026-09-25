@@ -23,20 +23,18 @@ struct StatTile: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .foregroundStyle(tint ?? Color.primary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(unit)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let caption {
-                    Text("· " + caption)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
+            Text(unit)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let caption {
+                Text(caption)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .ignore)
@@ -90,13 +88,21 @@ extension MetricFormatter {
         }
     }
 
-    /// "4.98–5.12 V": both ends in the unit chosen for the larger value.
+    /// "4.98–5.12 V": both ends in the unit chosen for the larger value, and
+    /// the smaller end with the same number of fraction digits as the larger
+    /// one (so a 3 mA floor under a 4.5 A peak reads "0.003–4.501", not
+    /// "0.003000–4.501").
     func span(_ lo: Double?, _ hi: Double?, _ m: Metric) -> String {
         guard let lo, let hi, lo.isFinite, hi.isFinite else { return Self.placeholder + " " + m.symbol }
-        let range = autoRange ? UnitRange.range(for: max(abs(lo), abs(hi)), metric: m, previous: nil) : .base
-        let low = format(lo, m, range: range)
-        let high = format(hi, m, range: range)
-        return "\(low.number)–\(high.number) \(high.unit)"
+        let larger = abs(lo) >= abs(hi) ? lo : hi
+        let range = autoRange ? UnitRange.range(for: abs(larger), metric: m, previous: nil) : .base
+        let scale = range == .milli ? 1000.0 : 1.0
+        let anchor = format(larger, m, range: range)
+        let separator = locale.decimalSeparator ?? "."
+        let digits = anchor.number.components(separatedBy: separator).dropFirst().first?.count ?? 0
+        let low = number(lo * scale, fractionDigits: digits)
+        let high = number(hi * scale, fractionDigits: digits)
+        return "\(low)–\(high) \(anchor.unit)"
     }
 
     /// Samples per second with one decimal, or the placeholder.

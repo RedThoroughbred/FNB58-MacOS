@@ -131,16 +131,21 @@ struct SessionDetailView: View {
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
                 .controlSize(.small)
+                Spacer(minLength: 0)
             } else {
                 SessionTagCapsules(tags: s.tags)
-                Spacer(minLength: 8)
-                Button("Edit") { showTagEditor = true }
-                    .font(.caption.weight(.medium))
-                    .accessibilityLabel("Edit tags")
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             if s.isDemo { SessionDemoBadge() }
             if s.state == .recovered { SessionRecoveredBadge() }
+            if !s.tags.isEmpty {
+                Button("Edit") { showTagEditor = true }
+                    .font(.caption.weight(.medium))
+                    .fixedSize()
+                    .accessibilityLabel("Edit tags")
+            }
         }
+        .padding(.horizontal, 4)
     }
 
     private func tiles(_ s: SessionSummary) -> some View {
