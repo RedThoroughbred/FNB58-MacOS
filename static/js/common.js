@@ -52,7 +52,8 @@ function updateConnectionStatus(connected, type = null) {
 
 // Format number with fixed decimals
 function formatNumber(value, decimals = 5) {
-    return Number(value).toFixed(decimals);
+    const n = Number(value);
+    return value === null || value === undefined || !Number.isFinite(n) ? '--' : n.toFixed(decimals);
 }
 
 // Format duration from seconds
@@ -152,3 +153,22 @@ async function checkConnectionStatus() {
 document.addEventListener('DOMContentLoaded', () => {
     checkConnectionStatus();
 });
+
+// Toast for pages that don't load dashboard_pro.js (settings, history).
+// dashboard_pro.js declares its own showToastPro, which takes precedence there.
+function showToastPro(message, type = 'info') {
+    let container = document.getElementById('toast-container-pro');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container-pro';
+        container.className = 'toast-container-pro';
+        document.body.appendChild(container);
+    }
+    const colors = { success: '#00ff88', error: '#ff4444', warning: '#ffd600', info: '#00d9ff' };
+    const toast = document.createElement('div');
+    toast.className = `toast-pro toast-${type}`;
+    toast.style.cssText = `padding:1rem 1.5rem;margin-top:.5rem;background:${colors[type] || colors.info};color:#000;border-radius:4px;font-weight:600;font-size:.85rem;box-shadow:0 4px 16px rgba(0,0,0,.5)`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}

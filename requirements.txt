@@ -1,22 +1,26 @@
 # Core Flask
-Flask==3.0.0
-Flask-SocketIO==5.3.6
-Flask-CORS==4.0.0
+Flask>=3.0,<4
+Flask-SocketIO>=5.3,<6
+Flask-CORS>=4.0,<6
+simple-websocket>=1.0        # WebSocket transport for Flask-SocketIO threading mode
 
 # USB Communication
-pyusb==1.2.1
-libusb1==3.1.0
+pyusb>=1.2.1
+libusb1>=3.1.0
 
 # Bluetooth Communication
-bleak>=0.20.0
+bleak>=0.22
 
 # Data Processing
 numpy>=1.26.0
 pandas>=2.2.0
 
 # Utilities
-python-dotenv==1.0.0
-python-dateutil==2.8.2
+python-dotenv>=1.0
+python-dateutil>=2.8
 
-# WebSocket async support (required)
-eventlet==0.40.3
+# Optional: real CPU/memory numbers on the dashboard
+psutil>=5.9
+
+# Tests
+pytest>=8.0

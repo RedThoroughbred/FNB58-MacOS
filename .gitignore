@@ -55,3 +55,9 @@ sessions/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# iOS build output
+ios/build/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+.venv/

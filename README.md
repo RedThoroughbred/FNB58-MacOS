@@ -90,7 +90,7 @@ Monitor voltage, current, power, and more in real-time through your web browser.
 docker-compose up -d
 
 # Or using Docker CLI
-docker run -d -p 5000:5000 \
+docker run -d -p 5001:5001 \
   --device=/dev/bus/usb:/dev/bus/usb \
   --privileged \
   fnb58-monitor
@@ -227,6 +227,40 @@ sudo udevadm trigger
 - **Capacity** (Ah/mAh)
 - **Min/Max/Average** for all metrics
 - **Sample count** and duration
+
+## 📱 iPhone App (`ios/`)
+
+A native SwiftUI app that connects to the FNB58 **directly over Bluetooth LE** — no Mac or
+server needed. Live voltage / current / power readouts and charts, session recording with
+energy (Wh) and capacity (mAh), saved sessions, and CSV export via the share sheet.
+
+Because iPhones can't act as a USB host, the app only gets what the meter sends over BLE
+(V, I, W). D+/D-, temperature and protocol triggering remain desktop/USB-only features.
+
+**Build & install (Xcode 16+, iOS 17+):**
+```bash
+brew install xcodegen
+cd ios && xcodegen generate
+open FNB58Monitor.xcodeproj      # select your iPhone, set your Team under Signing, press Run
+```
+
+**Run the unit tests:**
+```bash
+cd ios && xcodebuild test -project FNB58Monitor.xcodeproj -scheme FNB58Monitor \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+On the phone: turn the FNB58 on, enable Bluetooth in its settings menu, open the app, tap
+**Connect**, pick the meter. The Simulator has no Bluetooth radio — use **Use demo data** there.
+
+## 🧪 Tests
+
+```bash
+python -m pytest
+```
+
+Covers the USB packet decoder (offsets + CRC-8), the Bluetooth frame parser, `DeviceManager`
+statistics/recording, and the Flask API with a fake device. No hardware required.
 
 ## 🛠️ Development
 

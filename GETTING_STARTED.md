@@ -19,7 +19,7 @@ python start.py
 
 ### 3. Open Browser
 ```
-http://localhost:5000
+http://localhost:5001
 ```
 
 That's it! 🎉
@@ -115,7 +115,7 @@ That's it! 🎉
 ### Test USB Connection
 1. Plug in FNB58 via USB
 2. Run: `python start.py`
-3. Open browser to http://localhost:5000
+3. Open browser to http://localhost:5001
 4. Click "Connect (Auto)" or "USB"
 5. Should see live data!
 
@@ -183,13 +183,13 @@ python start.py
 ### Run on Network (Access from other devices)
 ```bash
 python app.py
-# Access from: http://YOUR_IP:5000
+# Access from: http://YOUR_IP:5001
 ```
 
 ### Docker (Future)
 ```bash
 docker build -t fnirsi-monitor .
-docker run -p 5000:5000 --device=/dev/bus/usb fnirsi-monitor
+docker run -p 5001:5001 --device=/dev/bus/usb fnirsi-monitor
 ```
 
 ### Cloud Deploy (Future)
