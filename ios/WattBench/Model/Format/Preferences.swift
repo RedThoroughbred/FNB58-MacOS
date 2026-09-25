@@ -43,9 +43,26 @@ final class Preferences {
     var capacityUnit: CapacityUnit { didSet { defaults.set(capacityUnit.rawValue, forKey: Key.capacityUnit) } }
     var showPeakLine: Bool { didSet { defaults.set(showPeakLine, forKey: Key.showPeakLine) } }
 
-    /// A formatter reflecting the current precision and auto-range settings.
+    /// Significant digits offered by the Settings picker.
+    static let precisionChoices = [3, 4]
+
+    /// Live chart windows (seconds) offered by the Settings picker; mirrors
+    /// the Live tab's window segments.
+    static let windowChoices: [Double] = [10, 30, 60, 120]
+
+    /// The keep-awake decision applied to `UIApplication.isIdleTimerDisabled`
+    /// by the app shell: only while connected, in the foreground and not in
+    /// Low Power Mode, so the screen always locks normally after a disconnect
+    /// or when the app is backgrounded.
+    nonisolated static func shouldKeepAwake(keepAwake: Bool, isConnected: Bool, isActive: Bool,
+                                            lowPowerMode: Bool) -> Bool {
+        keepAwake && isConnected && isActive && !lowPowerMode
+    }
+
+    /// A formatter reflecting the current precision, auto-range and
+    /// capacity-unit settings.
     var formatter: MetricFormatter {
-        MetricFormatter(precision: precision, autoRange: autoRangeUnits)
+        MetricFormatter(precision: precision, autoRange: autoRangeUnits, capacityUnit: capacityUnit)
     }
 
     @ObservationIgnored private let defaults: UserDefaults
