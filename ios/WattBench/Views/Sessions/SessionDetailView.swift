@@ -141,11 +141,18 @@ struct SessionDetailView: View {
             if s.isDemo { SessionDemoBadge().layoutPriority(1) }
             if s.state == .recovered { SessionRecoveredBadge().layoutPriority(1) }
             if !s.tags.isEmpty {
-                Button("Edit") { showTagEditor = true }
-                    .font(.caption.weight(.medium))
-                    .fixedSize()
-                    .layoutPriority(1)
-                    .accessibilityLabel("Edit tags")
+                // Plain style: the list-row button style draws its label a
+                // few points wider than it measures and clips at the row edge.
+                Button { showTagEditor = true } label: {
+                    Text("Edit")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.tint)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
+                .fixedSize()
+                .layoutPriority(1)
+                .accessibilityLabel("Edit tags")
             }
         }
         .padding(.horizontal, 4)
