@@ -89,7 +89,11 @@ enum HeroState {
 
     /// 24-hour "hh:mm:ss" in the given locale and zone.
     static func clock(_ date: Date, locale: Locale = .autoupdatingCurrent, timeZone: TimeZone = .current) -> String {
-        let style = Date.FormatStyle(locale: locale, timeZone: timeZone)
+        // `amPM: .omitted` alone keeps a 12-hour locale's hour cycle, so the
+        // cycle is forced on the locale itself.
+        var components = Locale.Components(locale: locale)
+        components.hourCycle = .zeroToTwentyThree
+        let style = Date.FormatStyle(locale: Locale(components: components), timeZone: timeZone)
             .hour(.twoDigits(amPM: .omitted))
             .minute(.twoDigits)
             .second(.twoDigits)
@@ -158,9 +162,12 @@ struct HeroReadout: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .contextMenu {
+            Button("Reset Peaks", systemImage: "arrow.counterclockwise") { meter.resetExtremes() }
             Button("Copy Value", systemImage: "doc.on.doc") {
                 UIPasteboard.general.string = HeroState.copyText(value, metric: metric, formatter: formatter)
             }
+            Divider()
+            Text("Peaks are 100 ms samples")
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(metric.title)

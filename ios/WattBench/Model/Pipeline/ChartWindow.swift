@@ -161,6 +161,15 @@ enum ChartWindow: Double, CaseIterable, Identifiable, Codable {
         last.addingTimeInterval(-window.seconds)
     }
 
+    /// The chart's scrollable x-domain: the readings' span, extended
+    /// backwards to at least one window so the newest sample can sit on the
+    /// trailing edge even while fewer than `window` seconds of data exist
+    /// (Swift Charts otherwise clamps the scroll position to the data).
+    static func xDomain(first: Date, last: Date, window: ChartWindow) -> ClosedRange<Date> {
+        let start = min(first, pinnedStart(last: last, window: window))
+        return start...max(last, start)
+    }
+
     /// True while the scroll position is within `tolerance` of the pinned
     /// start, i.e. the user has not scrolled back into history. One snapshot
     /// step is 200 ms, so the default tolerance of 1 s never trips by itself.

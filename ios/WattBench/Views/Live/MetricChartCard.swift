@@ -246,6 +246,7 @@ struct LiveChartPlot: View {
                 }
             }
             .chartYScale(domain: domain)
+            .chartXScale(domain: xDomain)
             .chartScrollableAxes(.horizontal)
             .chartXVisibleDomain(length: window.seconds)
             .chartScrollPosition(x: $scrollX)
@@ -357,6 +358,16 @@ struct LiveChartPlot: View {
     }
 
     // MARK: Scales
+
+    /// Scrollable extent: at least one window wide so the newest sample can
+    /// be pinned to the trailing edge from the first sample on.
+    private var xDomain: ClosedRange<Date> {
+        guard let first = points.first?.timestamp, let last = points.last?.timestamp else {
+            let now = Date()
+            return ChartWindow.pinnedStart(last: now, window: window)...now
+        }
+        return ChartWindow.xDomain(first: first, last: last, window: window)
+    }
 
     /// The readings inside the visible window: the trailing window while
     /// following, otherwise the window at the scroll position.

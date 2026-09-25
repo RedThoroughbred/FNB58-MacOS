@@ -117,6 +117,13 @@ final class ChartWindowTests: XCTestCase {
         let last = t0.addingTimeInterval(100)
         let pinned = ChartWindow.pinnedStart(last: last, window: .s30)
         XCTAssertEqual(pinned, t0.addingTimeInterval(70))
+
+        // The scrollable domain never starts later than the pinned start, so
+        // the newest sample can sit on the trailing edge with 5 s of data in a
+        // 30 s window; with more data than a window it is the data's span.
+        XCTAssertEqual(ChartWindow.xDomain(first: t0.addingTimeInterval(95), last: last, window: .s30), pinned...last)
+        XCTAssertEqual(ChartWindow.xDomain(first: t0, last: last, window: .s30), t0...last)
+        XCTAssertEqual(ChartWindow.xDomain(first: last, last: last, window: .s10), last.addingTimeInterval(-10)...last)
         XCTAssertTrue(ChartWindow.isFollowing(scrollX: pinned.addingTimeInterval(0.2), pinnedStart: pinned))
         XCTAssertTrue(ChartWindow.isFollowing(scrollX: pinned.addingTimeInterval(-0.9), pinnedStart: pinned))
         XCTAssertFalse(ChartWindow.isFollowing(scrollX: pinned.addingTimeInterval(-5), pinnedStart: pinned))
