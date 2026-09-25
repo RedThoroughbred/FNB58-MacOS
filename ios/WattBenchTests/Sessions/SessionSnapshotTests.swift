@@ -119,6 +119,10 @@ final class SessionSnapshotTests: XCTestCase {
         mount(view)
         pump(1.5)
         snapshot("chart-cursor-range-light")
+        // `drawHierarchy` cannot capture materials faithfully; with
+        // WATTBENCH_HOLD=1 the view stays on screen so the device screen can
+        // be captured with `xcrun simctl io <udid> screenshot` meanwhile.
+        if env["WATTBENCH_HOLD"] == "1" { pump(12) }
         model.select(span: .minute)
         model.reveal(mid)
         pump(1)
