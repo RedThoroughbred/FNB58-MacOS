@@ -29,6 +29,11 @@ struct AlertsSettingsView: View {
             }
         }
         .task { await alerts.refreshAuthorization() }
+        .task {  // TEMP-WSE-SCREENSHOT
+            let args = ProcessInfo.processInfo.arguments
+            if args.contains("-wse-editor") { editing = newRule }
+            if args.contains("-wse-permission") { await alerts.apply(.fiveVoltDevice) }
+        }
     }
 
     // MARK: - Sections

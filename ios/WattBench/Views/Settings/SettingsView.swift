@@ -4,10 +4,13 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         NavigationStack {
+            if ProcessInfo.processInfo.arguments.contains("-wse-alerts") { AlertsSettingsView() } else {  // TEMP-WSE-SCREENSHOT
             Form {
                 NavigationLink("Diagnostics") { DiagnosticsView() }
+                NavigationLink("Alerts") { AlertsSettingsView() }  // TEMP-WSE-SCREENSHOT
             }
             .navigationTitle("Settings")
+            }  // TEMP-WSE-SCREENSHOT
         }
     }
 }
