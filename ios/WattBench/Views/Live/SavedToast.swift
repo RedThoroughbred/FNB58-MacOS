@@ -11,7 +11,8 @@ struct ToastContent: Equatable, Identifiable {
     let undoSessionID: UUID?
 
     var symbol: String { role == .success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill" }
-    var tint: Color { role == .success ? .green : .red }
+    /// Accent for success (green is reserved for Power), red for a failure.
+    var tint: Color { role == .success ? .accentColor : .red }
 }
 
 /// "Saved · 3.21 Wh" in a material capsule, with Undo. Shown by `RecordBar`

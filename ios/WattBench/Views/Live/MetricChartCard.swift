@@ -311,8 +311,8 @@ struct LiveChartPlot: View {
                             .lineLimit(1)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .foregroundStyle(Color.accentColor)
-                            .background(Color.accentColor.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.white)
+                            .background(Color.accentColor, in: Capsule())
                             // An overlay annotation is proposed the rule's 1 pt width.
                             .fixedSize()
                     }
