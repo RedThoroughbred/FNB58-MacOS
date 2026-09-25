@@ -202,7 +202,7 @@ struct RecordingSetupSheet: View {
                     }
                 }
             }
-            .navigationTitle("New Recording")
+            .navigationTitle("Recording")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

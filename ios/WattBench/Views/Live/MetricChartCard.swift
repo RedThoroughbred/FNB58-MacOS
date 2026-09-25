@@ -302,8 +302,10 @@ struct LiveChartPlot: View {
                 RuleMark(x: .value("Marker", marker.timestamp))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     .foregroundStyle(Color.accentColor)
-                    .annotation(position: .top, alignment: .center, spacing: 2,
-                                overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                    // Inside the plot: anything above the plot area is
+                    // clipped by the scrollable chart.
+                    .annotation(position: .overlay, alignment: .top, spacing: 4,
+                                overflowResolution: .init(x: .fit(to: .plot), y: .fit(to: .plot))) {
                         Text(marker.label)
                             .font(.caption2)
                             .lineLimit(1)
@@ -311,6 +313,8 @@ struct LiveChartPlot: View {
                             .padding(.vertical, 2)
                             .foregroundStyle(Color.accentColor)
                             .background(Color.accentColor.opacity(0.15), in: Capsule())
+                            // An overlay annotation is proposed the rule's 1 pt width.
+                            .fixedSize()
                     }
             }
 
@@ -318,7 +322,7 @@ struct LiveChartPlot: View {
                 RuleMark(y: .value("Peak", peak))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     .foregroundStyle(metric.color.opacity(0.6))
-                    .annotation(position: .top, alignment: .trailing, spacing: 1) {
+                    .annotation(position: .bottom, alignment: .trailing, spacing: 1) {
                         Text("peak")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -330,8 +334,8 @@ struct LiveChartPlot: View {
                 RuleMark(x: .value("Cursor", p.timestamp))
                     .lineStyle(StrokeStyle(lineWidth: 1))
                     .foregroundStyle(Color.secondary)
-                    .annotation(position: .top, alignment: .center, spacing: 4,
-                                overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                    .annotation(position: .overlay, alignment: .top, spacing: 4,
+                                overflowResolution: .init(x: .fit(to: .plot), y: .fit(to: .plot))) {
                         readout(p)
                     }
                 if let metric = selection.metric {
@@ -361,6 +365,7 @@ struct LiveChartPlot: View {
         }
         .padding(8)
         .background(.regularMaterial, in: .rect(cornerRadius: 8, style: .continuous))
+        .fixedSize()
     }
 
     // MARK: Scales
