@@ -72,7 +72,7 @@ struct RecordBar: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .background(.bar)
         .overlay(alignment: .top) {

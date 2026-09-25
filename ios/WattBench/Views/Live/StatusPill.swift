@@ -27,6 +27,7 @@ struct StatusPill: View {
                     Text(stale ? "No data" : state.shortLabel)
                         .font(.footnote.weight(.medium))
                         .lineLimit(1)
+                        .fixedSize()
                     if case .reconnecting(_, let since) = state {
                         Text(timerInterval: since...Date.distantFuture, countsDown: false)
                             .font(.footnote.monospacedDigit())

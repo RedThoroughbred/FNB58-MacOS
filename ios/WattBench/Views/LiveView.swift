@@ -24,7 +24,6 @@ struct LiveView: View {
                             MetricChartCard()
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, 4)
                         .padding(.bottom, 12)
                     }
                 } else {

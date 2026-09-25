@@ -127,7 +127,7 @@ struct HeroReadout: View {
         let formatter = prefs.formatter
         let stale = isStale && HeroState.isStale(latest: latest?.timestamp, now: Date())
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             heroValue(hero, latest: latest, formatter: formatter, stale: stale)
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .top, spacing: 12) { tiles(hero, latest: latest, extremes: frame.extremes, formatter: formatter, stale: stale) }

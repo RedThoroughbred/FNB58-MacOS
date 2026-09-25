@@ -24,20 +24,26 @@ struct TripCard: View {
         let paused = isPaused || !meter.state.isConnected
         let demoExcluded = meter.isDemo && prefs.excludeDemoFromTrips
 
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    LiveLabel("Trip")
-                    Text("since \(trip.startedAt, format: .dateTime.hour().minute())")
-                        .font(.caption2.monospacedDigit())
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                LiveLabel("Trip")
+                Text("since \(trip.startedAt, format: .dateTime.hour().minute())")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                if paused {
+                    Image(systemName: "pause.circle")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
-                    if paused {
-                        Image(systemName: "pause.circle")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("Paused")
-                    }
+                        .accessibilityLabel("Paused")
                 }
+                Spacer(minLength: 8)
+                Button("Reset", systemImage: "arrow.counterclockwise") { requestReset(stats) }
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
+                    .disabled(stats.samples == 0 && stats.energyWh == 0)
+            }
+            HStack(alignment: .center, spacing: 12) {
                 HStack(alignment: .lastTextBaseline, spacing: 4) {
                     Text(energy.number)
                         .font(.system(.title, design: .rounded).weight(.semibold))
@@ -48,32 +54,27 @@ struct TripCard: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                HStack(spacing: 8) {
-                    Text(capacity.text).rollingNumber(stats.capacityAh)
-                    Text("·")
-                    Text(elapsed).monospacedDigit()
-                    Text("active").foregroundStyle(.tertiary)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(capacity.text).rollingNumber(stats.capacityAh)
+                        Text("·")
+                        Text(elapsed).monospacedDigit()
+                        Text("active").foregroundStyle(.tertiary)
+                    }
+                    .font(.subheadline)
+                    Text(peakLine(stats, formatter: formatter))
+                        .font(.caption2.monospacedDigit())
                 }
-                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                Text(peakLine(stats, formatter: formatter))
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                if demoExcluded {
-                    Text("Demo readings are not counted")
-                        .font(.caption2)
-                        .foregroundStyle(.purple)
-                }
+                .minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button("Reset", systemImage: "arrow.counterclockwise") { requestReset(stats) }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .controlSize(.small)
-                .disabled(stats.samples == 0 && stats.energyWh == 0)
+            if demoExcluded {
+                Text("Demo readings are not counted")
+                    .font(.caption2)
+                    .foregroundStyle(.purple)
+            }
         }
         .liveCard()
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20, style: .continuous))

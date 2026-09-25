@@ -5,10 +5,10 @@ import SwiftUI
 struct DemoBanner: View {
     var body: some View {
         Label("Demo data · simulated readings", systemImage: "play.circle")
-            .font(.footnote.weight(.medium))
+            .font(.caption.weight(.medium))
             .foregroundStyle(.purple)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
             .background(.purple.opacity(0.12))
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Demo data, simulated readings")

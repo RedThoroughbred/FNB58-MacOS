@@ -45,7 +45,9 @@ struct MetricChartCard: View {
     @State private var scrollX = Date.distantPast
     @State private var following = true
 
-    static let plotHeight: CGFloat = 176
+    /// Sized so the whole face (hero, tiles, trip, chart) fits above the
+    /// record bar on a 6.1-inch phone without scrolling.
+    static let plotHeight: CGFloat = 130
 
     private var selection: ChartMetric {
         get { ChartMetric(rawValue: metricRaw) ?? .power }
@@ -67,13 +69,6 @@ struct MetricChartCard: View {
 
         VStack(alignment: .leading, spacing: 8) {
             header(selection, last: snapshot.points.last, formatter: formatter)
-
-            Picker("Metric", selection: Binding(get: { selection }, set: { self.selection = $0 })) {
-                ForEach(ChartMetric.allCases) { m in
-                    Text(m.label).tag(m).accessibilityLabel(m.title)
-                }
-            }
-            .pickerStyle(.segmented)
 
             LiveChartPlot(points: snapshot.points,
                           gaps: snapshot.gaps,
@@ -138,15 +133,26 @@ struct MetricChartCard: View {
 
     // MARK: Header
 
+    /// Metric picker (the card's title), the live value of the selected
+    /// metric and the options menu on one row.
     private func header(_ selection: ChartMetric, last: Reading?, formatter: MetricFormatter) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(selection.title)
-                .font(.subheadline.weight(.semibold))
-            Spacer()
-            Text(liveValue(selection, last: last, formatter: formatter))
-                .font(.callout.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+        HStack(spacing: 8) {
+            Picker("Metric", selection: Binding(get: { selection }, set: { self.selection = $0 })) {
+                ForEach(ChartMetric.allCases) { m in
+                    Text(m.label).tag(m).accessibilityLabel(m.title)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 220)
+            Spacer(minLength: 4)
+            if selection != .all {
+                Text(liveValue(selection, last: last, formatter: formatter))
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .accessibilityLabel("Latest \(selection.title.lowercased())")
+            }
             Menu {
                 Toggle("Show Peak Line", systemImage: "chart.line.flattrend.xyaxis", isOn: Binding(
                     get: { prefs.showPeakLine }, set: { prefs.showPeakLine = $0 }))
@@ -160,7 +166,7 @@ struct MetricChartCard: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.body)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 28, height: 32)
                     .contentShape(Rectangle())
             }
             .accessibilityLabel("Chart options")
