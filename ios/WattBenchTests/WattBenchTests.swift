@@ -1,5 +1,5 @@
 import XCTest
-@testable import FNB58Monitor
+@testable import WattBench
 
 final class ProtocolTests: XCTestCase {
     private func frame(v: Double, i: Double, w: Double, prefix: Int = FNB58Protocol.frameOffset) -> Data {

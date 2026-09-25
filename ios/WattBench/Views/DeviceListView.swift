@@ -53,16 +53,16 @@ struct DeviceListView: View {
                     Toggle("Show all Bluetooth devices", isOn: $meter.showAllDevices)
                 }
 
-                #if targetEnvironment(simulator)
                 Section {
-                    Button("Use demo data") {
+                    Button {
                         meter.startDemo()
                         dismiss()
+                    } label: {
+                        Label("Try with demo data", systemImage: "play.circle")
                     }
                 } footer: {
-                    Text("The iOS Simulator has no Bluetooth radio.")
+                    Text("Explore the app without a meter. Demo readings are simulated and clearly labeled “Demo data”.")
                 }
-                #endif
             }
             .navigationTitle("Connect")
             .navigationBarTitleDisplayMode(.inline)

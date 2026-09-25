@@ -18,10 +18,12 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>FNB58 Monitor connects to your FNIRSI FNB58 power meter over Bluetooth to show live voltage, current and power.</string>
+	<string>Bluetooth is used to connect to your FNIRSI FNB58 power meter and receive its live voltage, current and power readings.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -1,4 +1,4 @@
-name: FNB58Monitor
+name: WattBench
 options:
   bundleIdPrefix: com.thebench
   deploymentTarget:
@@ -12,51 +12,55 @@ settings:
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 targets:
-  FNB58Monitor:
+  WattBench:
     type: application
     platform: iOS
     sources:
-      - path: FNB58Monitor
+      - path: WattBench
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.thebench.fnb58monitor
+        PRODUCT_BUNDLE_IDENTIFIER: com.thebench.wattbench
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
-        INFOPLIST_KEY_CFBundleDisplayName: FNB58
-        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_CFBundleDisplayName: WattBench
+        TARGETED_DEVICE_FAMILY: "1"
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: YES
     info:
-      path: FNB58Monitor/Info.plist
+      path: WattBench/Info.plist
       properties:
-        NSBluetoothAlwaysUsageDescription: FNB58 Monitor connects to your FNIRSI FNB58 power meter over Bluetooth to show live voltage, current and power.
+        NSBluetoothAlwaysUsageDescription: Bluetooth is used to connect to your FNIRSI FNB58 power meter and receive its live voltage, current and power readings.
+        ITSAppUsesNonExemptEncryption: false
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UIRequiresFullScreen: false
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
-  FNB58MonitorTests:
+  WattBenchTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: FNB58MonitorTests
+      - path: WattBenchTests
     dependencies:
-      - target: FNB58Monitor
+      - target: WattBench
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.thebench.fnb58monitor.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.thebench.wattbench.tests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  FNB58Monitor:
+  WattBench:
     build:
       targets:
-        FNB58Monitor: all
-        FNB58MonitorTests: [test]
+        WattBench: all
+        WattBenchTests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - FNB58MonitorTests
+        - WattBenchTests
+    archive:
+      config: Release

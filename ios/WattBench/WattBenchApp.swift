@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct FNB58MonitorApp: App {
+struct WattBenchApp: App {
     @State private var meter = MeterManager()
     @State private var store = SessionStore()
 

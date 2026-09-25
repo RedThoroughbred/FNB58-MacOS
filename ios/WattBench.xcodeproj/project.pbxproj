@@ -1,0 +1,486 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		08DFB83E56FAB060C505FD9C /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB196D69F06BFF514BBF7CB /* HistoryView.swift */; };
+		1DEE0D45F9030A3A15A01296 /* FNB58Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3B53D9E331D3C8B51E79DE /* FNB58Protocol.swift */; };
+		2EA6C8A16C369B177B779644 /* DeviceListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7668508DD8DD712644A3F3 /* DeviceListView.swift */; };
+		5E0E25C668EEC79B4BB4E859 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B98F3EF4E5B190797AFA8135 /* Assets.xcassets */; };
+		7C313462FEEFFF1642B29BFD /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C634CE2A7102D5B5837319CE /* LiveView.swift */; };
+		8D5B6C8974CAD465C974B56D /* FNB58MonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F00CDBC6093AC5FE21852B0 /* FNB58MonitorTests.swift */; };
+		AF121683692A5A44E03B461B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87F1D6FE4A0B38B975A19754 /* ContentView.swift */; };
+		B0F31D4226F6301213037410 /* Reading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222C4EBDC8C5DC575DC75850 /* Reading.swift */; };
+		B6AEDE9F85BEB6F4E039BA28 /* FNB58MonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B8E0F788C0E194EC1A3BFF /* FNB58MonitorApp.swift */; };
+		C0B6D173C0593F42930FC673 /* MeterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0524DF23380EBA6FD858629 /* MeterManager.swift */; };
+		C9D635C2ABEF79BDBB3C4315 /* SessionRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E30AE5AF8BCBAA641ABDAA /* SessionRecorder.swift */; };
+		E126B343101C2A104D9DB63B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6FF3A12C5374917392492155 /* PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		95027E61E36F8C18E05B11C5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D427EEF952162E122A5311E7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CDB9CC09B77F8DC696C3B5F3;
+			remoteInfo = WattBench;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		108BE55C02CDD4C736A43221 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1F00CDBC6093AC5FE21852B0 /* FNB58MonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FNB58MonitorTests.swift; sourceTree = "<group>"; };
+		222C4EBDC8C5DC575DC75850 /* Reading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reading.swift; sourceTree = "<group>"; };
+		24A468EB94168BD9574305D7 /* WattBench.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WattBench.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F7668508DD8DD712644A3F3 /* DeviceListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceListView.swift; sourceTree = "<group>"; };
+		37B9C5F80FD3A522E972DE2B /* WattBenchTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WattBenchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3CB196D69F06BFF514BBF7CB /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		56E30AE5AF8BCBAA641ABDAA /* SessionRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRecorder.swift; sourceTree = "<group>"; };
+		62B8E0F788C0E194EC1A3BFF /* FNB58MonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FNB58MonitorApp.swift; sourceTree = "<group>"; };
+		6FF3A12C5374917392492155 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		87F1D6FE4A0B38B975A19754 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A0524DF23380EBA6FD858629 /* MeterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterManager.swift; sourceTree = "<group>"; };
+		B98F3EF4E5B190797AFA8135 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C634CE2A7102D5B5837319CE /* LiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveView.swift; sourceTree = "<group>"; };
+		EE3B53D9E331D3C8B51E79DE /* FNB58Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FNB58Protocol.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		03402D581C025491F24C794D /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				222C4EBDC8C5DC575DC75850 /* Reading.swift */,
+				56E30AE5AF8BCBAA641ABDAA /* SessionRecorder.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		0F0262ED39D335E13539E312 /* WattBench */ = {
+			isa = PBXGroup;
+			children = (
+				B98F3EF4E5B190797AFA8135 /* Assets.xcassets */,
+				62B8E0F788C0E194EC1A3BFF /* FNB58MonitorApp.swift */,
+				108BE55C02CDD4C736A43221 /* Info.plist */,
+				6FF3A12C5374917392492155 /* PrivacyInfo.xcprivacy */,
+				314DA6A69F75E267D7C77AC9 /* Bluetooth */,
+				03402D581C025491F24C794D /* Model */,
+				10C5860759B02C9EE3339F9A /* Views */,
+			);
+			path = WattBench;
+			sourceTree = "<group>";
+		};
+		10C5860759B02C9EE3339F9A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				87F1D6FE4A0B38B975A19754 /* ContentView.swift */,
+				2F7668508DD8DD712644A3F3 /* DeviceListView.swift */,
+				3CB196D69F06BFF514BBF7CB /* HistoryView.swift */,
+				C634CE2A7102D5B5837319CE /* LiveView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		314DA6A69F75E267D7C77AC9 /* Bluetooth */ = {
+			isa = PBXGroup;
+			children = (
+				EE3B53D9E331D3C8B51E79DE /* FNB58Protocol.swift */,
+				A0524DF23380EBA6FD858629 /* MeterManager.swift */,
+			);
+			path = Bluetooth;
+			sourceTree = "<group>";
+		};
+		9AF71051FF9DB8C52BD38E68 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				24A468EB94168BD9574305D7 /* WattBench.app */,
+				37B9C5F80FD3A522E972DE2B /* WattBenchTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B7F6D751F7794126CE3498CF = {
+			isa = PBXGroup;
+			children = (
+				0F0262ED39D335E13539E312 /* WattBench */,
+				EFB6B37C7DBC160048579331 /* WattBenchTests */,
+				9AF71051FF9DB8C52BD38E68 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EFB6B37C7DBC160048579331 /* WattBenchTests */ = {
+			isa = PBXGroup;
+			children = (
+				1F00CDBC6093AC5FE21852B0 /* FNB58MonitorTests.swift */,
+			);
+			path = WattBenchTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CDB9CC09B77F8DC696C3B5F3 /* WattBench */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D78194DEEBA69BC19FAD1BCD /* Build configuration list for PBXNativeTarget "WattBench" */;
+			buildPhases = (
+				AD65BD44E52547E940DBAEB1 /* Sources */,
+				79701C149626306BAD0CB89B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WattBench;
+			packageProductDependencies = (
+			);
+			productName = WattBench;
+			productReference = 24A468EB94168BD9574305D7 /* WattBench.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D8509ECC2A7EAADC5851899F /* WattBenchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D15033E3217367F95C162994 /* Build configuration list for PBXNativeTarget "WattBenchTests" */;
+			buildPhases = (
+				7D346FDB372F774DDC83039C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EA75B757F4EEBEF2CF4BCDEF /* PBXTargetDependency */,
+			);
+			name = WattBenchTests;
+			packageProductDependencies = (
+			);
+			productName = WattBenchTests;
+			productReference = 37B9C5F80FD3A522E972DE2B /* WattBenchTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D427EEF952162E122A5311E7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					CDB9CC09B77F8DC696C3B5F3 = {
+						DevelopmentTeam = CC8X33MU92;
+						ProvisioningStyle = Automatic;
+					};
+					D8509ECC2A7EAADC5851899F = {
+						DevelopmentTeam = CC8X33MU92;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 97708D6895EB954FDD587059 /* Build configuration list for PBXProject "WattBench" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = B7F6D751F7794126CE3498CF;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9AF71051FF9DB8C52BD38E68 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CDB9CC09B77F8DC696C3B5F3 /* WattBench */,
+				D8509ECC2A7EAADC5851899F /* WattBenchTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		79701C149626306BAD0CB89B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5E0E25C668EEC79B4BB4E859 /* Assets.xcassets in Resources */,
+				E126B343101C2A104D9DB63B /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7D346FDB372F774DDC83039C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D5B6C8974CAD465C974B56D /* FNB58MonitorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AD65BD44E52547E940DBAEB1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF121683692A5A44E03B461B /* ContentView.swift in Sources */,
+				2EA6C8A16C369B177B779644 /* DeviceListView.swift in Sources */,
+				B6AEDE9F85BEB6F4E039BA28 /* FNB58MonitorApp.swift in Sources */,
+				1DEE0D45F9030A3A15A01296 /* FNB58Protocol.swift in Sources */,
+				08DFB83E56FAB060C505FD9C /* HistoryView.swift in Sources */,
+				7C313462FEEFFF1642B29BFD /* LiveView.swift in Sources */,
+				C0B6D173C0593F42930FC673 /* MeterManager.swift in Sources */,
+				B0F31D4226F6301213037410 /* Reading.swift in Sources */,
+				C9D635C2ABEF79BDBB3C4315 /* SessionRecorder.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EA75B757F4EEBEF2CF4BCDEF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CDB9CC09B77F8DC696C3B5F3 /* WattBench */;
+			targetProxy = 95027E61E36F8C18E05B11C5 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		264C2440798CCA8422565E67 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CC8X33MU92;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		4D5D04651F8EE2351D4EFBEA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = CC8X33MU92;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		5BE65CA91857E00A979628D1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thebench.wattbench.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WattBench.app/WattBench";
+			};
+			name = Debug;
+		};
+		718D6E4A3EA2F100EF6C7FC4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WattBench/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WattBench;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thebench.wattbench;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		C64A4A5262CB424ECCBFDBFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thebench.wattbench.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WattBench.app/WattBench";
+			};
+			name = Release;
+		};
+		E5C9D726537773E130DE6741 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WattBench/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WattBench;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thebench.wattbench;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		97708D6895EB954FDD587059 /* Build configuration list for PBXProject "WattBench" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4D5D04651F8EE2351D4EFBEA /* Debug */,
+				264C2440798CCA8422565E67 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D15033E3217367F95C162994 /* Build configuration list for PBXNativeTarget "WattBenchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5BE65CA91857E00A979628D1 /* Debug */,
+				C64A4A5262CB424ECCBFDBFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D78194DEEBA69BC19FAD1BCD /* Build configuration list for PBXNativeTarget "WattBench" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E5C9D726537773E130DE6741 /* Debug */,
+				718D6E4A3EA2F100EF6C7FC4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D427EEF952162E122A5311E7 /* Project object */;
+}

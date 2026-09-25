@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A1E7BB43E89E32C225209C0A"
-               BuildableName = "FNB58Monitor.app"
-               BlueprintName = "FNB58Monitor"
-               ReferencedContainer = "container:FNB58Monitor.xcodeproj">
+               BlueprintIdentifier = "CDB9CC09B77F8DC696C3B5F3"
+               BuildableName = "WattBench.app"
+               BlueprintName = "WattBench"
+               ReferencedContainer = "container:WattBench.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,10 +29,10 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8CD2CB991EDA3E327959475A"
-               BuildableName = "FNB58MonitorTests.xctest"
-               BlueprintName = "FNB58MonitorTests"
-               ReferencedContainer = "container:FNB58Monitor.xcodeproj">
+               BlueprintIdentifier = "D8509ECC2A7EAADC5851899F"
+               BuildableName = "WattBenchTests.xctest"
+               BlueprintName = "WattBenchTests"
+               ReferencedContainer = "container:WattBench.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,10 +46,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A1E7BB43E89E32C225209C0A"
-            BuildableName = "FNB58Monitor.app"
-            BlueprintName = "FNB58Monitor"
-            ReferencedContainer = "container:FNB58Monitor.xcodeproj">
+            BlueprintIdentifier = "CDB9CC09B77F8DC696C3B5F3"
+            BuildableName = "WattBench.app"
+            BlueprintName = "WattBench"
+            ReferencedContainer = "container:WattBench.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -58,10 +58,10 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8CD2CB991EDA3E327959475A"
-               BuildableName = "FNB58MonitorTests.xctest"
-               BlueprintName = "FNB58MonitorTests"
-               ReferencedContainer = "container:FNB58Monitor.xcodeproj">
+               BlueprintIdentifier = "D8509ECC2A7EAADC5851899F"
+               BuildableName = "WattBenchTests.xctest"
+               BlueprintName = "WattBenchTests"
+               ReferencedContainer = "container:WattBench.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -82,10 +82,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A1E7BB43E89E32C225209C0A"
-            BuildableName = "FNB58Monitor.app"
-            BlueprintName = "FNB58Monitor"
-            ReferencedContainer = "container:FNB58Monitor.xcodeproj">
+            BlueprintIdentifier = "CDB9CC09B77F8DC696C3B5F3"
+            BuildableName = "WattBench.app"
+            BlueprintName = "WattBench"
+            ReferencedContainer = "container:WattBench.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -101,10 +101,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "A1E7BB43E89E32C225209C0A"
-            BuildableName = "FNB58Monitor.app"
-            BlueprintName = "FNB58Monitor"
-            ReferencedContainer = "container:FNB58Monitor.xcodeproj">
+            BlueprintIdentifier = "CDB9CC09B77F8DC696C3B5F3"
+            BuildableName = "WattBench.app"
+            BlueprintName = "WattBench"
+            ReferencedContainer = "container:WattBench.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -124,7 +124,7 @@ fnirsi-web-monitor/
 - One private asyncio loop on a dedicated thread (`_LoopThread`); every bleak call goes through
   `run_coroutine_threadsafe`. Never drive the loop from a Flask thread.
 - Limited data compared to USB (no D+/D-/Temp)
-- The same protocol is implemented natively in `ios/FNB58Monitor/Bluetooth/` (CoreBluetooth)
+- The same protocol is implemented natively in `ios/WattBench/Bluetooth/` (CoreBluetooth)
 
 ### 3. Device Manager (`device/device_manager.py`)
 
@@ -519,7 +519,7 @@ python start.py
 python -m pytest                      # backend: decoders, DeviceManager, Flask API (no hardware needed)
 python test_setup.py                  # dependency sanity check
 cd ios && xcodegen generate && \
-  xcodebuild test -project FNB58Monitor.xcodeproj -scheme FNB58Monitor \
+  xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'   # iOS unit tests
 ```
 

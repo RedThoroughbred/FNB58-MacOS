@@ -241,12 +241,12 @@ Because iPhones can't act as a USB host, the app only gets what the meter sends 
 ```bash
 brew install xcodegen
 cd ios && xcodegen generate
-open FNB58Monitor.xcodeproj      # select your iPhone, set your Team under Signing, press Run
+open WattBench.xcodeproj      # select your iPhone, set your Team under Signing, press Run
 ```
 
 **Run the unit tests:**
 ```bash
-cd ios && xcodebuild test -project FNB58Monitor.xcodeproj -scheme FNB58Monitor \
+cd ios && xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 

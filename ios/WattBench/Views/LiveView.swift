@@ -25,7 +25,7 @@ struct LiveView: View {
                 .padding()
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("FNB58")
+            .navigationTitle("WattBench")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
