@@ -92,10 +92,20 @@ struct ExternalLink: View {
     }
 }
 
-/// The app icon from the asset catalog, with a symbol fallback.
+/// The app icon from the built bundle, with a symbol fallback.
 private struct AppIconImage: View {
+    /// The asset catalog does not expose "AppIcon" to `UIImage(named:)`; the
+    /// compiled bundle lists the rendered files under CFBundleIcons.
+    private static var icon: UIImage? {
+        guard let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],
+              let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
+              let files = primary["CFBundleIconFiles"] as? [String],
+              let name = files.last else { return nil }
+        return UIImage(named: name)
+    }
+
     var body: some View {
-        if let icon = UIImage(named: "AppIcon") {
+        if let icon = Self.icon {
             Image(uiImage: icon)
                 .resizable()
                 .scaledToFill()
