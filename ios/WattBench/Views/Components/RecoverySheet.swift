@@ -15,7 +15,7 @@ struct RecoverySheet: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     header
                     statGrid
                     if let keepError {
@@ -30,12 +30,12 @@ struct RecoverySheet: View {
                         .padding(.horizontal, 8)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 28)
-                .padding(.bottom, 12)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
             }
             buttons
                 .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                .padding(.bottom, 8)
         }
         .background(Color(.systemGroupedBackground))
         .presentationDetents([.medium])
@@ -53,9 +53,9 @@ struct RecoverySheet: View {
     // MARK: Sections
 
     private var header: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Image(systemName: "waveform.badge.exclamationmark")
-                .font(.system(size: 36, weight: .medium))
+                .font(.system(size: 30, weight: .medium))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Recording was interrupted")
@@ -74,7 +74,7 @@ struct RecoverySheet: View {
         let f = prefs.formatter
         let energy = f.energy(summary.stats.energyWh)
         let capacity = f.capacity(summary.stats.capacityAh)
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
             tile("Energy", energy.number, energy.unit, spoken: energy.text)
             tile("Capacity", capacity.number, capacity.unit, spoken: capacity.text)
             tile("Duration", f.duration(summary.stats.durationS), "active",
@@ -103,7 +103,8 @@ struct RecoverySheet: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
@@ -111,11 +112,11 @@ struct RecoverySheet: View {
     }
 
     private var buttons: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             Button(action: keep) {
                 Text("Keep Recording")
                     .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 28)
+                    .frame(maxWidth: .infinity, minHeight: 24)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -124,7 +125,7 @@ struct RecoverySheet: View {
             } label: {
                 Text("Discard")
                     .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 28)
+                    .frame(maxWidth: .infinity, minHeight: 24)
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
