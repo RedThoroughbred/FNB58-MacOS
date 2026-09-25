@@ -197,14 +197,18 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        Section("About") {
+        Section {
             NavigationLink {
                 AboutView()
             } label: {
-                LabeledContent("About WattBench", value: AppInfo.versionSummary)
+                LabeledContent("Version", value: AppInfo.versionSummary)
             }
             ExternalLink("Privacy policy", url: AppInfo.privacyPolicyURL)
             ExternalLink("Support", url: AppInfo.supportURL)
+        } header: {
+            Text("About")
+        } footer: {
+            Text(AppInfo.disclaimer)
         }
     }
 

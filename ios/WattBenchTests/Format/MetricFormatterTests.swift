@@ -229,8 +229,11 @@ final class MetricFormatterTests: XCTestCase {
 
     func testByteCount() {
         let f = MetricFormatter(locale: Locale(identifier: "en_US"))
-        XCTAssertEqual(f.byteCount(0), "Zero KB")
-        XCTAssertTrue(f.byteCount(42_000_000).hasSuffix("MB"), f.byteCount(42_000_000))
-        XCTAssertTrue(f.byteCount(1_500).hasSuffix("KB"), f.byteCount(1_500))
+        // The exact casing of the unit ("kB" / "KB") is the system's choice;
+        // only the magnitude selection is ours.
+        XCTAssertTrue(f.byteCount(0).localizedCaseInsensitiveContains("zero"), f.byteCount(0))
+        XCTAssertTrue(f.byteCount(42_000_000).localizedCaseInsensitiveContains("MB"), f.byteCount(42_000_000))
+        XCTAssertTrue(f.byteCount(1_500).localizedCaseInsensitiveContains("KB"), f.byteCount(1_500))
+        XCTAssertFalse(f.byteCount(1_500).localizedCaseInsensitiveContains("MB"), f.byteCount(1_500))
     }
 }
