@@ -97,7 +97,7 @@ final class RecordingJournalTests: XCTestCase {
         XCTAssertEqual(try RecordingJournal.read(url: url).readings.count, 4)
 
         // Only a header, or a header plus a few bytes: no records, no error.
-        try handle(truncateTo: RecordingJournal.headerSize + 3)
+        try truncateFile(to: RecordingJournal.headerSize + 3)
         XCTAssertEqual(try RecordingJournal.read(url: url).readings.count, 0)
         XCTAssertEqual(RecordingJournal.count(url: url), 0)
 
@@ -109,7 +109,7 @@ final class RecordingJournalTests: XCTestCase {
         XCTAssertEqual(RecordingJournal.count(url: url.appendingPathExtension("missing")), 0)
     }
 
-    private func handle(truncateTo length: Int) throws {
+    private func truncateFile(to length: Int) throws {
         let h = try FileHandle(forWritingTo: url)
         try h.truncate(atOffset: UInt64(length))
         try h.close()
@@ -139,8 +139,8 @@ final class RecordingJournalTests: XCTestCase {
         journal.append(reading(70, monotonicBase: 1))
         journal.waitForWrites()
         XCTAssertEqual(RecordingJournal.count(url: url), 71, "the first append after 1 s flushes")
-        XCTAssertEqual(journal.lastFlush.timeIntervalSince(t0), 0, accuracy: 120,
-                       "lastFlush is a real wall-clock stamp of the completed write")
+        XCTAssertLessThan(abs(journal.lastFlush.timeIntervalSinceNow), 120,
+                          "lastFlush is a real wall-clock stamp of the completed write, not the injected clock")
 
         // synchronize() flushes too and stamps lastSync.
         journal.append(reading(71, monotonicBase: 1))

@@ -59,16 +59,21 @@ enum LegacyMigration {
 
         let folder = SessionFolder.url(for: session.id, in: directory)
         let fm = FileManager.default
+        // Only a folder this call created is ever cleaned up on failure;
+        // anything else at that path is not ours to delete.
+        var createdFolder = false
         do {
-            if fm.fileExists(atPath: folder.path) {
+            var isDirectory: ObjCBool = false
+            if fm.fileExists(atPath: folder.path, isDirectory: &isDirectory), isDirectory.boolValue {
                 // A previous, interrupted attempt: start over from the JSON.
                 try fm.removeItem(at: folder)
             }
-            try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+            try fm.createDirectory(at: folder, withIntermediateDirectories: false)
+            createdFolder = true
             try SessionFolder.writeManifest(summary, in: folder)
             try SessionFolder.writeSamples(session.readings, startEpoch: session.startTime, in: folder)
         } catch {
-            try? fm.removeItem(at: folder)
+            if createdFolder { try? fm.removeItem(at: folder) }
             return Outcome(file: file, status: .kept(reason: error.localizedDescription), summary: summary)
         }
 

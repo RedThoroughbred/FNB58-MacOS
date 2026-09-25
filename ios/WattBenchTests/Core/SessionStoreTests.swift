@@ -120,13 +120,16 @@ final class SessionStoreTests: XCTestCase {
         let summary = try XCTUnwrap(store.summaries.first)
         XCTAssertEqual(summary.id, id)
         XCTAssertEqual(summary.sampleCount, 12)
-        XCTAssertEqual(summary.schemaVersion, 1)
+        // The first load migrates the 1.0 file into a folder in the current schema.
+        XCTAssertEqual(summary.schemaVersion, Session.currentSchema)
         XCTAssertFalse(summary.sparkline.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: dir.appendingPathComponent("\(id.uuidString).json").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: SessionFolder.samplesURL(in: SessionFolder.url(for: id, in: dir)).path))
         let session = try await store.session(for: id)
         XCTAssertEqual(session.readings.count, 12)
 
-        // Touching it re-saves in the current schema.
         try store.rename(id: id, to: "Migrated")
+        XCTAssertEqual(store.summaries.first?.name, "Migrated")
         XCTAssertEqual(store.summaries.first?.schemaVersion, Session.currentSchema)
     }
 

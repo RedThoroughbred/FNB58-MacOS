@@ -67,9 +67,11 @@ struct SessionStats: Codable, Equatable {
     /// interval has been integrated.
     var avgPower: Double { durationS > 0 ? energyWh * 3600 / durationS : meanPowerSampled }
 
+    /// Bookkeeping for `dt(to:)`. Both are ignored by `==` (a decoded copy
+    /// must compare equal to the live value it was written from; `Date` does
+    /// not survive a JSON round trip bit for bit, and `lastMonotonic` is
+    /// process-local and never persisted).
     private var lastTimestamp: Date?
-    /// Process-local; never persisted and ignored by `==`, so a decoded copy
-    /// compares equal to the live value it was written from.
     private var lastMonotonic: TimeInterval?
 
     /// Largest interval accepted between two samples; longer intervals
@@ -84,7 +86,7 @@ struct SessionStats: Codable, Equatable {
             && a.avgVoltage == b.avgVoltage && a.avgCurrent == b.avgCurrent
             && a.meanPowerSampled == b.meanPowerSampled && a.energyWh == b.energyWh
             && a.capacityAh == b.capacityAh && a.durationS == b.durationS
-            && a.gapCount == b.gapCount && a.gapSeconds == b.gapSeconds && a.lastTimestamp == b.lastTimestamp
+            && a.gapCount == b.gapCount && a.gapSeconds == b.gapSeconds
     }
 
     /// Interval from the last added reading to `r`, using the rule in

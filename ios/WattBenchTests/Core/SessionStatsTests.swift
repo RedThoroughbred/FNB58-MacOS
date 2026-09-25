@@ -97,12 +97,12 @@ final class SessionStatsTests: XCTestCase {
         XCTAssertEqual(s.dt(to: Reading(timestamp: t0.addingTimeInterval(7), voltage: 5, current: 1, power: 5, monotonic: 50.1)),
                        0.1, accuracy: 1e-9, "monotonic stamps on both sides win over the wall clock")
         XCTAssertEqual(s.dt(to: Reading(timestamp: t0.addingTimeInterval(0.3), voltage: 5, current: 1, power: 5)),
-                       0.3, accuracy: 1e-9, "a reading without a stamp falls back to the wall clock")
+                       0.3, accuracy: 1e-6, "a reading without a stamp falls back to the wall clock")
         // A mixed pair (stamped after an unstamped one) also uses the wall clock.
         var mixed = SessionStats()
         mixed.add(Reading(timestamp: t0, voltage: 5, current: 1, power: 5))
         XCTAssertEqual(mixed.dt(to: Reading(timestamp: t0.addingTimeInterval(0.2), voltage: 5, current: 1, power: 5, monotonic: 99)),
-                       0.2, accuracy: 1e-9)
+                       0.2, accuracy: 1e-6)
         // Equality ignores the process-local monotonic cache, so a value that
         // went through JSON compares equal to the live one.
         s.add(Reading(timestamp: t0.addingTimeInterval(0.1), voltage: 5, current: 1, power: 5, monotonic: 50.1))

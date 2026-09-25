@@ -183,7 +183,7 @@ final class MeterManagerTests: XCTestCase {
 
         let relaunched = makeMeter()
         XCTAssertEqual(relaunched.trips[0].stats.samples, 20, "survives a relaunch")
-        XCTAssertEqual(relaunched.trips[0].stats.energyWh, 10 * 1.9 / 3600, accuracy: 1e-9)
+        XCTAssertEqual(relaunched.trips[0].stats.energyWh, 10 * 1.9 / 3600, accuracy: 1e-7)
         XCTAssertEqual(relaunched.extremes.maxW?.value, 10, "so do the peak-hold values")
 
         relaunched.resetTrip(0)

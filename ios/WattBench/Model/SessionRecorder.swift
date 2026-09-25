@@ -22,10 +22,10 @@ final class SessionRecorder {
     let tags: [String]
     let notes: String?
     let isDemo: Bool
-    let startTime = Date()
+    let startTime: Date
     /// `MonotonicClock` stamp taken together with `startTime`; journal
     /// offsets are measured from it.
-    let monotonicStart = MonotonicClock.now
+    let monotonicStart: TimeInterval
     private(set) var stats = SessionStats()
     /// In-memory samples; empty whenever a journal is attached.
     private(set) var readings: [Reading] = []
@@ -56,15 +56,20 @@ final class SessionRecorder {
     @ObservationIgnored private var bucketCount = 0
 
     /// `directory` is the sessions directory (`SessionStore.directory`); the
-    /// recorder creates its own folder inside it.
+    /// recorder creates its own folder inside it. `startTime` and
+    /// `monotonicStart` default to now and are injectable so tests can
+    /// journal readings on a synthetic time base.
     init(name: String, deviceName: String?, tags: [String] = [], notes: String? = nil,
-         autoStop: AutoStopRule? = nil, isDemo: Bool = false, directory: URL? = nil) {
+         autoStop: AutoStopRule? = nil, isDemo: Bool = false, directory: URL? = nil,
+         startTime: Date = Date(), monotonicStart: TimeInterval = MonotonicClock.now) {
         self.name = name.trimmingCharacters(in: .whitespaces)
         self.deviceName = deviceName
         self.tags = tags
         self.notes = notes
         self.autoStop = autoStop
         self.isDemo = isDemo
+        self.startTime = startTime
+        self.monotonicStart = monotonicStart
         self.lastCheckpoint = startTime
 
         guard let directory else {

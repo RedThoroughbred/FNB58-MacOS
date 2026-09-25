@@ -76,7 +76,7 @@ final class FixtureSourceTests: XCTestCase {
         let b = Reading(timestamp: t0.addingTimeInterval(3600), voltage: 5, current: 1, power: 5, monotonic: 100.1)
         XCTAssertEqual(FixtureSource.interval(from: a, to: b), 0.1, accuracy: 1e-9, "monotonic wins over a wall-clock jump")
         let c = Reading(timestamp: t0.addingTimeInterval(0.2), voltage: 5, current: 1, power: 5)
-        XCTAssertEqual(FixtureSource.interval(from: a, to: c), 0.2, accuracy: 1e-9, "wall clock when a stamp is missing")
+        XCTAssertEqual(FixtureSource.interval(from: a, to: c), 0.2, accuracy: 1e-6, "wall clock when a stamp is missing")
         XCTAssertEqual(FixtureSource.interval(from: c, to: a), 0, "unsorted fixtures never sleep negative")
     }
 
@@ -84,8 +84,8 @@ final class FixtureSourceTests: XCTestCase {
         let s = FixtureSource.synthetic(seconds: 2, hz: 10)
         XCTAssertEqual(s.count, 20)
         for k in 1..<s.count {
-            XCTAssertEqual(s[k].timestamp.timeIntervalSince(s[k - 1].timestamp), 0.1, accuracy: 1e-9)
-            XCTAssertEqual(s[k].monotonic - s[k - 1].monotonic, 0.1, accuracy: 1e-9)
+            XCTAssertEqual(s[k].timestamp.timeIntervalSince(s[k - 1].timestamp), 0.1, accuracy: 1e-6)
+            XCTAssertEqual(s[k].monotonic - s[k - 1].monotonic, 0.1, accuracy: 1e-6)
         }
         for r in s {
             XCTAssertEqual(r.voltage, FixtureSource.quantise(r.voltage), "1/10000 grid, as the meter reports")

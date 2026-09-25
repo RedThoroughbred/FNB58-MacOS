@@ -11,7 +11,9 @@
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>
-			<!-- UserDefaults stores only the identifier of the last-connected meter, read by this app alone. -->
+			<!-- UserDefaults holds only this app's own state (last-connected meter identifier, trip counter,
+			     peak-hold values, display preferences), read by this app alone. Session folders are sorted by
+			     the start time stored in their manifests, so no file-timestamp API is used. -->
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
 			<key>NSPrivacyAccessedAPITypeReasons</key>

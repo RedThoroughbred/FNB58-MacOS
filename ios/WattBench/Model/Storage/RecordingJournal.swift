@@ -268,6 +268,7 @@ final class RecordingJournal: @unchecked Sendable {
             appendRecord(&data, seconds: r.timestamp.timeIntervalSince(startEpoch), r)
         }
         do {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try data.write(to: url, options: .atomic)
         } catch {
             throw JournalError.io(error.localizedDescription)

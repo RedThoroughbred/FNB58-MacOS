@@ -21,8 +21,10 @@ final class RecoveryTests: XCTestCase {
     /// without `finish()` (the manifest stays in state `.recording`).
     @discardableResult
     private func interruptedRecording(name: String = "Charge test", samples: Int = 50, gapAfter: Int? = nil) -> UUID {
+        // The readings below live on a synthetic time base (wall clock t0,
+        // monotonic 100), so the recorder is anchored to the same base.
         let rec = SessionRecorder(name: name, deviceName: "FNB58", tags: ["bench"], notes: "n",
-                                  isDemo: false, directory: dir)
+                                  isDemo: false, directory: dir, startTime: t0, monotonicStart: 100)
         rec.addMarker(label: "Plugged in")
         var t = 0.0
         for k in 0..<samples {
@@ -54,7 +56,9 @@ final class RecoveryTests: XCTestCase {
         XCTAssertEqual(s.stats.energyWh, 10 * 4.8 / 3600, accuracy: 1e-9)
         XCTAssertEqual(s.endTime.timeIntervalSince(t0), 34.9, accuracy: 1e-3, "end time is the last record")
         XCTAssertEqual(s.markers.filter { $0.kind == .gap }.count, 1)
-        XCTAssertEqual(s.markers.first?.label, "Plugged in", "user markers from the manifest survive")
+        XCTAssertEqual(s.markers.first { $0.kind == .gap }?.label, "Gap 30 s")
+        XCTAssertTrue(s.markers.contains { $0.kind == .user && $0.label == "Plugged in" },
+                      "user markers from the manifest survive")
         XCTAssertEqual(s.tags, ["bench"])
         XCTAssertFalse(s.sparkline.isEmpty)
 

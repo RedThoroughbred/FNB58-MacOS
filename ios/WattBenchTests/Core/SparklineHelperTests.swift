@@ -26,7 +26,7 @@ final class SparklineHelperTests: XCTestCase {
         let r = readings(1000)
         let spark = Decimator.meanPower(r[...], targetCount: 60)
         XCTAssertEqual(spark.count, 60)
-        XCTAssertEqual(spark.first ?? -1, 8, accuracy: 1e-6, "mean of 0...16 for the first bucket of 1000/60 readings")
+        XCTAssertEqual(spark.first ?? -1, 7.5, accuracy: 1e-6, "mean of 0..<16 for the first bucket of 1000/60 readings")
         XCTAssertLessThan(spark[0], spark[59])
         XCTAssertEqual(Decimator.meanPower(r[0..<5], targetCount: 60).count, 5, "fewer readings than buckets: one per reading")
         XCTAssertTrue(Decimator.meanPower([][...], targetCount: 60).isEmpty)

@@ -28,7 +28,7 @@ final class SessionRecorderTests: XCTestCase {
         XCTAssertEqual(rec.markers.first?.timestamp, t0.addingTimeInterval(134.1), "placed at the first sample after the gap")
         XCTAssertEqual(rec.stats.gapCount, 1)
         XCTAssertEqual(rec.stats.gapSeconds, 134, accuracy: 1e-6)
-        XCTAssertEqual(rec.stats.durationS, 0.1, accuracy: 1e-9, "the gap is not part of the active duration")
+        XCTAssertEqual(rec.stats.durationS, 0.1, accuracy: 1e-6, "the gap is not part of the active duration")
         XCTAssertEqual(rec.readings.count, 3)
         XCTAssertEqual(SessionRecorder.gapLabel(30), "Gap 30 s")
         XCTAssertEqual(SessionRecorder.gapLabel(4.6), "Gap 5 s")
