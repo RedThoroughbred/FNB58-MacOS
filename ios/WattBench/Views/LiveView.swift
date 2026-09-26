@@ -16,14 +16,31 @@ struct LiveView: View {
     /// the stream stops or resumes, so the face is not re-rendered by it.
     @State private var staleness = Staleness.fresh
     /// "Saved · 3.21 Wh" with Undo, shown for five seconds after a save. It
-    /// is an overlay of the face rather than part of the record bar because
-    /// the safe-area inset host does not reliably relayout a bar that grows.
+    /// floats above the record bar as a sibling of the navigation stack:
+    /// the bottom safe-area inset host clips content that grows after its
+    /// first layout, and a ScrollView's own frame extends under that inset,
+    /// so neither the bar nor an overlay of the face can host it.
     @State private var toast: ToastContent?
     @State private var toastTask: Task<Void, Never>?
+    /// Measured height of the record bar, so the toast clears it.
+    @State private var barHeight: CGFloat = 0
 
     static let toastSeconds: TimeInterval = 5
 
     var body: some View {
+        ZStack(alignment: .bottom) {
+            face
+            if let toast {
+                SavedToast(content: toast, onUndo: { undo(toast) }, onDismiss: dismissToast)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, barHeight + 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: toast)
+    }
+
+    private var face: some View {
         NavigationStack {
             Group {
                 if HeroState.showsFace(meter.state) {
@@ -43,15 +60,6 @@ struct LiveView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
-            .overlay(alignment: .bottom) {
-                if let toast {
-                    SavedToast(content: toast, onUndo: { undo(toast) }, onDismiss: dismissToast)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
-            .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: toast)
             .onChange(of: store.saveCount) { _, _ in showSavedToast() }
             .onChange(of: store.saveError) { _, error in
                 guard let error else { return }
@@ -83,6 +91,7 @@ struct LiveView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 RecordBar()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
             }
             .sheet(isPresented: $showConnect) {
                 DeviceListView()
