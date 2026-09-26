@@ -8,7 +8,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;padding
 header.top .brand{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink)}
 header.top .brand img{width:32px;height:32px;border-radius:8px}
 header.top nav{display:flex;gap:18px;font-size:15px}
-header.top nav a{color:var(--sub)}
+header.top nav a{color:var(--sub);white-space:nowrap}
 .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center;padding:36px 0 24px}
 .hero .icon{width:128px;height:128px;border-radius:29px;box-shadow:0 14px 34px rgba(0,0,0,.18)}
 .hero h1{font-size:44px;line-height:1.1;margin:18px 0 8px;letter-spacing:-.02em}
