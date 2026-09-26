@@ -9,6 +9,7 @@ struct RecordBar: View {
     @Environment(MeterManager.self) private var meter
     @Environment(SessionStore.self) private var store
     @Environment(Preferences.self) private var prefs
+    @Environment(AppRouter.self) private var router
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showSetup = false
@@ -71,6 +72,16 @@ struct RecordBar: View {
         .frame(maxWidth: .infinity)
         .background(.bar)
         .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: recording?.id)
+        // Home Screen quick action "Start Recording": open the setup sheet once
+        // a meter (or demo) is connected and nothing is recording yet.
+        .onChange(of: router.pendingQuickAction, initial: true) { _, action in
+            guard action == .startRecording, meter.state.isConnected, meter.recording == nil else { return }
+            if router.takeQuickAction(.startRecording) { showSetup = true }
+        }
+        .onChange(of: meter.state.isConnected) { _, connected in
+            guard connected, meter.recording == nil, router.takeQuickAction(.startRecording) else { return }
+            showSetup = true
+        }
         .sheet(isPresented: $showSetup) {
             RecordingSetupSheet(deviceName: meter.state.label,
                                 isDemo: meter.isDemo,
