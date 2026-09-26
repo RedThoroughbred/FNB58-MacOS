@@ -15,8 +15,9 @@ struct ToastContent: Equatable, Identifiable {
     var tint: Color { role == .success ? .accentColor : .red }
 }
 
-/// "Saved · 3.21 Wh" in a material capsule, with Undo. Shown by `RecordBar`
-/// for five seconds after `SessionStore.saveCount` changes.
+/// "Saved · 3.21 Wh" in a material capsule, with Undo. Shown by `LiveView`
+/// above the record bar for five seconds after `SessionStore.saveCount`
+/// changes.
 struct SavedToast: View {
     let content: ToastContent
     let onUndo: () -> Void

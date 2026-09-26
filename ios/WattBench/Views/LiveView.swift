@@ -5,13 +5,23 @@ import SwiftUI
 /// here reads the 10 Hz `latest`; each card reads its own 5 Hz publication.
 struct LiveView: View {
     @Environment(MeterManager.self) private var meter
+    @Environment(SessionStore.self) private var store
+    @Environment(Preferences.self) private var prefs
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showConnect = false
     @State private var showSettings = false
     /// Refreshed once per second while the scene is active; changes only when
     /// the stream stops or resumes, so the face is not re-rendered by it.
     @State private var staleness = Staleness.fresh
+    /// "Saved · 3.21 Wh" with Undo, shown for five seconds after a save. It
+    /// is an overlay of the face rather than part of the record bar because
+    /// the safe-area inset host does not reliably relayout a bar that grows.
+    @State private var toast: ToastContent?
+    @State private var toastTask: Task<Void, Never>?
+
+    static let toastSeconds: TimeInterval = 5
 
     var body: some View {
         NavigationStack {
@@ -33,6 +43,20 @@ struct LiveView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
+            .overlay(alignment: .bottom) {
+                if let toast {
+                    SavedToast(content: toast, onUndo: { undo(toast) }, onDismiss: dismissToast)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: toast)
+            .onChange(of: store.saveCount) { _, _ in showSavedToast() }
+            .onChange(of: store.saveError) { _, error in
+                guard let error else { return }
+                show(ToastContent(title: "Could not save · \(error)", role: .failure, undoSessionID: nil))
+            }
             .navigationTitle("WattBench")
             .toolbarTitleMenu {
                 Button("Connect…", systemImage: "antenna.radiowaves.left.and.right") { showConnect = true }
@@ -77,6 +101,44 @@ struct LiveView: View {
                 }
             }
         }
+    }
+
+    // MARK: Saved toast
+
+    private func showSavedToast() {
+        guard let saved = store.lastSaved else { return }
+        let formatter = prefs.formatter
+        let title: String
+        if let reason = saved.autoStopReason.flatMap(AutoStopRule.Reason.init(rawValue:)) {
+            // The setup sheet stores the armed rule as the default at every start.
+            let detail = LiveFormat.autoStopDetail(reason, rule: prefs.defaultAutoStop, formatter: formatter)
+            title = "Stopped automatically · \(detail)"
+        } else {
+            title = "Saved · \(formatter.energy(saved.stats.energyWh).text)"
+        }
+        show(ToastContent(title: title, role: .success, undoSessionID: saved.id))
+    }
+
+    private func show(_ content: ToastContent) {
+        toast = content
+        toastTask?.cancel()
+        toastTask = Task {
+            try? await Task.sleep(for: .seconds(Self.toastSeconds))
+            guard !Task.isCancelled, toast?.id == content.id else { return }
+            toast = nil
+        }
+    }
+
+    private func undo(_ content: ToastContent) {
+        if let id = content.undoSessionID {
+            store.delete(id: id)
+        }
+        dismissToast()
+    }
+
+    private func dismissToast() {
+        toastTask?.cancel()
+        toast = nil
     }
 }
 
