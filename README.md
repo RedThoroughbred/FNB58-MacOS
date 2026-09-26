@@ -37,9 +37,11 @@ ads, no analytics, no network access — your data stays on your phone. **iPhone
 - **CSV / summary export** through the share sheet; **Home Screen quick actions**; reconnects by itself
 - **Demo mode** so you can explore the app before your meter arrives
 
-The source lives in [`ios/`](ios/) (SwiftUI + CoreBluetooth). Build instructions are in the
-[iPhone App](#-iphone-app-ios) section below. WattBench is an independent project and is not
-affiliated with or endorsed by FNIRSI.
+WattBench is a native SwiftUI + CoreBluetooth app, available on the
+[App Store](https://apps.apple.com/us/app/id6816404264). Its source is not part of this repository;
+the Bluetooth protocol it speaks is documented and implemented in Python in
+[`device/bluetooth_reader.py`](device/bluetooth_reader.py). WattBench is an independent project and
+is not affiliated with or endorsed by FNIRSI.
 
 ---
 
@@ -273,32 +275,17 @@ sudo udevadm trigger
 - **Min/Max/Average** for all metrics
 - **Sample count** and duration
 
-## 📱 iPhone App (`ios/`)
+## 📱 iPhone App — WattBench
 
-A native SwiftUI app that connects to the FNB58 **directly over Bluetooth LE** — no Mac or
-server needed. Live voltage / current / power readouts and charts, session recording with
-energy (Wh) and capacity (mAh), saved sessions, and CSV export via the share sheet.
+Want the readings on your phone instead of a browser? **[WattBench](https://apps.apple.com/us/app/id6816404264)**
+connects to the FNB58 **directly over Bluetooth LE** — no Mac or server needed — with live
+readouts and charts, a trip counter, crash-safe background recording, session reports, alerts and
+CSV export. See the [website](https://redthoroughbred.github.io/FNB58-MacOS/) and the
+[user guide](https://redthoroughbred.github.io/FNB58-MacOS/guide.html).
 
 Because iPhones can't act as a USB host, the app only gets what the meter sends over BLE
-(V, I, W). D+/D-, temperature and protocol triggering remain desktop/USB-only features.
-
-**Build & install (Xcode 16+, iOS 17+):**
-```bash
-brew install xcodegen
-cd ios && xcodegen generate
-open WattBench.xcodeproj      # select your iPhone, set your Team under Signing, press Run
-```
-
-**Run the unit tests:**
-```bash
-cd ios && xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
-```
-
-On the phone: turn the FNB58 on, enable Bluetooth in its settings menu, open the app, tap
-**Connect**, pick the meter. The Simulator has no Bluetooth radio — use **Try Demo Data** there.
-
-The [user guide](https://redthoroughbred.github.io/FNB58-MacOS/guide.html) covers every screen and setting; the site itself is served from [`docs/`](docs/) by GitHub Pages.
+(V, I, W). D+/D-, temperature and protocol triggering remain features of this desktop monitor
+over USB.
 
 ## 🧪 Tests
 
@@ -364,7 +351,7 @@ Contributions are welcome! This project is designed to be:
 
 ### Ideas for Contributions
 
-- 📱 iOS/Android native apps
+- 🤖 Android app
 - 🔋 Battery testing presets
 - 📊 More chart types (heatmaps, 3D, etc.)
 - 🌍 Multi-language support

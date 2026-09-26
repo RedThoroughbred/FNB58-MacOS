@@ -29,7 +29,6 @@ fnirsi-web-monitor/
 │   ├── settings.html          # Bluetooth scanner and configuration
 │   └── history.html           # Session viewer and comparison
 ├── tests/                      # pytest suite (hardware-free)
-└── ios/                        # SwiftUI + CoreBluetooth iPhone app
 ```
 
 ## Architecture
@@ -124,7 +123,7 @@ fnirsi-web-monitor/
 - One private asyncio loop on a dedicated thread (`_LoopThread`); every bleak call goes through
   `run_coroutine_threadsafe`. Never drive the loop from a Flask thread.
 - Limited data compared to USB (no D+/D-/Temp)
-- The same protocol is implemented natively in `ios/WattBench/Bluetooth/` (CoreBluetooth)
+- The same protocol is used by the WattBench iPhone app (closed source; App Store)
 
 ### 3. Device Manager (`device/device_manager.py`)
 
@@ -479,7 +478,7 @@ print(devices)
 - [ ] Protocol triggering (QC/PD modes)
 - [ ] Advanced statistics (FFT, harmonics)
 - [ ] Comparison mode (overlay sessions)
-- [x] Mobile native app (SwiftUI, `ios/`)
+- [x] Mobile native app (WattBench on the App Store, separate private repo)
 - [ ] Desktop app (Electron)
 - [ ] Cloud sync and sharing
 
@@ -518,47 +517,13 @@ python start.py
 ```bash
 python -m pytest                      # backend: decoders, DeviceManager, Flask API (no hardware needed)
 python test_setup.py                  # dependency sanity check
-cd ios && xcodegen generate -q && \
-  xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
-  -derivedDataPath build                                       # iOS unit tests
 ```
 
-### iOS App (`ios/`)
-Native SwiftUI + CoreBluetooth app (iOS 17+, Swift 5 language mode, `SWIFT_STRICT_CONCURRENCY`
-targeted), generated from `ios/project.yml` with
-[xcodegen](https://github.com/yonaskolb/XcodeGen). It talks to the meter directly over BLE
-(no Flask server involved), so it only gets V/I/W. `FNB58Protocol.swift` mirrors
-`device/bluetooth_reader.py`; keep them in sync. Sessions live in the app's Documents
-directory (visible in Files); CSV exports are written to a temporary folder and shared with
-`ShareLink`. In the Simulator use "Try with demo data" - it has no Bluetooth radio.
-
-**Build rules**
-- `ios/WattBench.xcodeproj` is generated and **not tracked** (`.gitignore`). Run
-  `xcodegen generate -q` before every build (`release.sh` and `run-on-phone.sh` already do).
-  Never edit `project.pbxproj`; add files by putting them in a folder that `project.yml`
-  covers (`WattBench/`, `WattBenchTests/`) - xcodegen picks up folders, `.gitkeep` is excluded.
-- Version numbers come from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
-  (Info.plist references `$(MARKETING_VERSION)` and `$(CURRENT_PROJECT_VERSION)`).
-- The root `.gitignore` ignores `*.json`; `ios/WattBench/**` and `ios/WattBenchTests/**` are
-  re-included so asset catalogs and test fixtures are tracked.
-- Never run two `xcodebuild`s at once. The 1.1 workstreams each test on their **own**
-  simulator to avoid install races: WS-A iPhone 17 Pro Max, WS-B iPhone 17 Pro, WS-C
-  iPhone 17, WS-D iPhone Air, WS-E iPhone 17e (`xcrun simctl list devices`; if a name is
-  ambiguous pass `-destination 'platform=iOS Simulator,id=<udid>'`).
-
-**Layout (1.1 foundation, see `ios/PLAN/00-foundation.md`)**
-- `Bluetooth/` MeterManager (CoreBluetooth only), FNB58Protocol, MeterSource + ConnectionState
-- `Model/Reading.swift` Reading, SessionStats, Marker, Session; `Model/SessionRecorder.swift`
-- `Model/Pipeline/` SamplePipeline (DisplayFrame + ChartSnapshot at <= 5 Hz), RingBuffer,
-  TripMeter, Extremes, AutoStopRule, SampleObserver, ReconnectPolicy, MonotonicClock
-- `Model/Storage/` SessionStore (summaries first), SessionSummary, RecordingJournal (`.wbj`)
-- `Model/Analysis/` Decimator; `Model/Format/` Metric, MetricFormatter, Preferences, AppRouter
-- `Alerts/` AlertCoordinator (+ AlertRule/AlertEvent); `Views/{Live,Sessions,Connect,Settings,Alerts,Components}`
-- Every stop of a recording goes through `MeterManager.stopRecording`, whose
-  `onRecordingStopped` hook (wired in `WattBenchApp`) saves through `SessionStore`.
-- Tests mirror the folders under `WattBenchTests/` (`Core/`, `Format/`, `Alerts/`, ...);
-  fixtures in `WattBenchTests/Fixtures/` are loaded with `Bundle(for:)`.
+### Website (`docs/`)
+Static GitHub Pages site for the WattBench iPhone app (landing page, user guide, privacy page),
+served from `main` / `docs/`. Plain HTML + one stylesheet, no build step. `PRIVACY.md` at the repo
+root is the canonical privacy policy: the App Store listing and the app link to it, so keep that
+path stable. The iPhone app's source lives in a separate private repository.
 
 ### Connect to Device
 ```bash

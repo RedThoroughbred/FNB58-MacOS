@@ -41,13 +41,13 @@ instance/
 # macOS
 .DS_Store
 
-# Data (root folders of the desktop app only; git matches case-insensitively on
-# macOS, so an unanchored `sessions/` would also hide ios/.../Views/Sessions/)
+# Data (root folders of the desktop app only)
 /exports/
 /sessions/
 *.csv
 *.json
 !manifest.json
+!docs/**/*.json
 
 # Logs
 *.log
@@ -57,10 +57,4 @@ instance/
 .coverage
 htmlcov/
 
-# iOS: the Xcode project is generated from ios/project.yml (xcodegen generate) and never tracked
-ios/build*/
-ios/*.xcodeproj/
-# The `*.json` rule above must not hide asset catalogs or test fixtures
-!ios/WattBench/**/*.json
-!ios/WattBenchTests/**/*.json
 .venv/
