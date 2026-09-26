@@ -19,6 +19,7 @@ struct SessionsListView: View {
     @State private var renameTarget: SessionSummary?
     @State private var renameText = ""
     @State private var pendingDelete: [SessionSummary]?
+    @State private var showDiscardInterrupted = false
     @State private var deleteCount = 0
     @State private var errorMessage: String?
 
@@ -57,6 +58,12 @@ struct SessionsListView: View {
                 } message: { _ in
                     Text("This removes the recording and its samples. This cannot be undone.")
                 }
+                .confirmationDialog("Discard the interrupted recording?", isPresented: $showDiscardInterrupted,
+                                    titleVisibility: .visible) {
+                    Button("Discard Recording", role: .destructive) { discardInterrupted() }
+                } message: {
+                    Text("Its samples are deleted. This cannot be undone.")
+                }
                 .onChange(of: editMode.isEditing) { _, editing in
                     if !editing { selection.removeAll() }
                 }
@@ -70,7 +77,7 @@ struct SessionsListView: View {
     // MARK: - Content
 
     @ViewBuilder private var content: some View {
-        if store.summaries.isEmpty {
+        if store.summaries.isEmpty && store.interrupted == nil {
             ContentUnavailableView {
                 Label("No Sessions Yet", systemImage: "clock.arrow.circlepath")
             } description: {
@@ -85,7 +92,7 @@ struct SessionsListView: View {
                     }
                 }
             }
-        } else if visible.isEmpty {
+        } else if visible.isEmpty && store.interrupted == nil {
             ContentUnavailableView.search(text: query)
         } else {
             list
@@ -94,6 +101,9 @@ struct SessionsListView: View {
 
     private var list: some View {
         List(selection: $selection) {
+            if let interrupted = store.interrupted {
+                interruptedSection(interrupted)
+            }
             if let loadError = store.loadError {
                 Section {
                     Label(loadError, systemImage: "exclamationmark.triangle")
@@ -130,6 +140,39 @@ struct SessionsListView: View {
             }
         }
         .listStyle(.insetGrouped)
+    }
+
+    /// A recording that was still running when the app last quit: the
+    /// `RecoverySheet` choices (keep as a recovered session, or discard)
+    /// inline at the top of the list, so nothing modal blocks the tab.
+    private func interruptedSection(_ s: SessionSummary) -> some View {
+        Section {
+            SessionRow(summary: s)
+            HStack(spacing: 12) {
+                Button {
+                    keepInterrupted()
+                } label: {
+                    Label("Keep", systemImage: "checkmark")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                Button(role: .destructive) {
+                    showDiscardInterrupted = true
+                } label: {
+                    Label("Discard", systemImage: "trash")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .buttonBorderShape(.capsule)
+            .padding(.vertical, 4)
+        } header: {
+            Label("Interrupted Recording", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        } footer: {
+            Text("This recording was still running when WattBench last quit. Keep it as a recovered session or discard it.")
+        }
+        .selectionDisabled()
     }
 
     private func dayHeader(_ day: Date) -> some View {
@@ -250,6 +293,19 @@ struct SessionsListView: View {
             store.delete(id: s.id)
             selection.remove(s.id)
         }
+        deleteCount += 1
+    }
+
+    private func keepInterrupted() {
+        do {
+            try store.keepInterrupted()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func discardInterrupted() {
+        store.discardInterrupted()
         deleteCount += 1
     }
 
