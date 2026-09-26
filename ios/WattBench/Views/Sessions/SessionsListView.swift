@@ -100,7 +100,10 @@ struct SessionsListView: View {
     }
 
     private var list: some View {
-        List(selection: $selection) {
+        // The selection binding is only handed to the List while editing:
+        // with it always present, a tap selects the row instead of pushing
+        // the NavigationLink.
+        List(selection: editMode.isEditing ? $selection : nil) {
             if let interrupted = store.interrupted {
                 interruptedSection(interrupted)
             }
