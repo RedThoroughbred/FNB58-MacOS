@@ -79,6 +79,36 @@ enum Decimator {
         minMaxBuckets(readings, metric: .power, targetCount: targetCount).map { Float($0.mean) }
     }
 
+    // MARK: Additions (session detail)
+
+    /// Buckets worth computing for a plot `pixelWidth` points wide: two per
+    /// pixel (4 * width / 2), capped so no more than `cap` marks reach a
+    /// `Chart`.
+    static func targetCount(forPixelWidth pixelWidth: Double, cap: Int = 1500) -> Int {
+        guard pixelWidth.isFinite, pixelWidth > 0 else { return 1 }
+        return Swift.min(cap, Swift.max(1, Int(4 * pixelWidth / 2)))
+    }
+
+    /// Intervals between consecutive readings longer than `threshold`
+    /// (reconnects, the app suspended), drawn as bands on the detail chart.
+    static func gaps(in readings: ArraySlice<Reading>,
+                     longerThan threshold: TimeInterval = SessionStats.maxGapS) -> [DateInterval] {
+        var out: [DateInterval] = []
+        var previous: Reading?
+        for r in readings {
+            if let p = previous {
+                let dt = (r.monotonic > 0 && p.monotonic > 0)
+                    ? r.monotonic - p.monotonic
+                    : r.timestamp.timeIntervalSince(p.timestamp)
+                if dt > threshold, r.timestamp > p.timestamp {
+                    out.append(DateInterval(start: p.timestamp, end: r.timestamp))
+                }
+            }
+            previous = r
+        }
+        return out
+    }
+
     /// Averages a series down to at most `targetCount` values.
     static func condense(_ values: [Float], targetCount: Int) -> [Float] {
         let n = values.count
