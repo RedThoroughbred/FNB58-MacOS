@@ -8,6 +8,7 @@ struct WattBenchApp: App {
     @State private var router: AppRouter
     @State private var alerts: AlertCoordinator
     @Environment(\.scenePhase) private var scenePhase
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         // The store first: its load seals any recording that was interrupted
@@ -21,18 +22,27 @@ struct WattBenchApp: App {
 
         // Every stop (Stop button, auto-stop rule, notification action) goes
         // through MeterManager.stopRecording, which hands the session here.
-        meter.onRecordingStopped = { session, _ in
+        meter.onRecordingStopped = { session, reason in
             do {
                 try store.save(session)
             } catch {
                 store.saveError = error.localizedDescription
             }
+            // Cancels the pending "meter unreachable" notice and posts the
+            // "Recording finished" notice when the app is in the background.
+            alerts.recordingDidStop(session, reason: reason)
+        }
+        meter.onUnreachableWhileRecording = { name in
+            alerts.recordingDidPause(meterName: name)
         }
         meter.addObserver(alerts)
         meter.autoConnectOnLaunch = prefs.autoConnect
         meter.excludeDemoFromTrips = prefs.excludeDemoFromTrips
-        alerts.onAlert = { meter.addMarker(label: $0.title) }
+        alerts.onAlert = { meter.addMarker(label: $0.title, kind: .alert) }
         alerts.onStopAndSave = { _ = meter.stopRecording() }
+        if let interrupted = store.interrupted {
+            alerts.recordingWasInterrupted(interrupted)
+        }
 
         _meter = State(initialValue: meter)
         _store = State(initialValue: store)
@@ -66,6 +76,20 @@ struct WattBenchApp: App {
                 }
                 .onChange(of: prefs.autoConnect) { _, on in
                     meter.autoConnectOnLaunch = on
+                }
+                // Home Screen quick actions: cold launch (already pending) and
+                // warm launch (posted by the scene delegate).
+                .task {
+                    if let action = QuickActions.pending {
+                        QuickActions.pending = nil
+                        router.pendingQuickAction = action
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: QuickActions.didReceive)) { note in
+                    if let action = note.object as? AppRouter.QuickAction {
+                        QuickActions.pending = nil
+                        router.pendingQuickAction = action
+                    }
                 }
         }
     }

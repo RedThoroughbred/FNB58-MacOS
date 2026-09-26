@@ -137,7 +137,7 @@ struct SettingsView: View {
         } header: {
             Text("Meter")
         } footer: {
-            Text("Only devices named FNB58 are listed unless Show all Bluetooth devices is on.")
+            Text("Only devices named FNB58 are listed unless Show all Bluetooth devices is on.\n\nBluetooth stays active in the background only while WattBench is connected to a meter, so a recording continues with the screen locked. Disconnect when you are done to save battery. WattBench never scans for meters in the background.")
         }
     }
 

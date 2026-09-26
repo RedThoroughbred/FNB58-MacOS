@@ -29,6 +29,25 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>record.circle</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Start Recording</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.thebench.wattbench.startRecording</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>antenna.radiowaves.left.and.right</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Connect to Last Meter</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.thebench.wattbench.connectLastMeter</string>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>

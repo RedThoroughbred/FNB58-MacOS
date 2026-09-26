@@ -43,6 +43,13 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UIBackgroundModes:
           - bluetooth-central
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemType: com.thebench.wattbench.startRecording
+            UIApplicationShortcutItemTitle: Start Recording
+            UIApplicationShortcutItemIconSymbolName: record.circle
+          - UIApplicationShortcutItemType: com.thebench.wattbench.connectLastMeter
+            UIApplicationShortcutItemTitle: Connect to Last Meter
+            UIApplicationShortcutItemIconSymbolName: antenna.radiowaves.left.and.right
         UIRequiresFullScreen: false
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true

@@ -92,6 +92,9 @@ final class MeterManager: NSObject {
     /// Invoked for every non-discarded stop (manual, auto-stop, notification
     /// action). `WattBenchApp` wires it to `SessionStore.save`.
     @ObservationIgnored var onRecordingStopped: (@MainActor (Session, AutoStopRule.Reason?) -> Void)?
+    /// Called with the meter name when reconnecting gives up while a recording
+    /// is in progress (the pending connect is kept; the alert layer notifies).
+    @ObservationIgnored var onUnreachableWhileRecording: (@MainActor (String) -> Void)?
 
     var isDemo: Bool { state == .demo }
 
@@ -287,10 +290,10 @@ final class MeterManager: NSObject {
         return session
     }
 
-    func addMarker(label: String) {
+    func addMarker(label: String, kind: Marker.Kind = .user) {
         guard let rec = recording else { return }
-        rec.addMarker(label: label)
-        logEvent("Marker: \(label)")
+        rec.addMarker(label: label, kind: kind)
+        logEvent("Marker (\(kind.rawValue)): \(label)")
     }
 
     /// The device name stored with a new recording.
@@ -523,6 +526,9 @@ final class MeterManager: NSObject {
         lastError = "Meter appears to be off or out of range"
         errorEventCount += 1
         logEvent("Gave up waiting for \(name) after \(Int(ReconnectPolicy.giveUpAfter)) s")
+        if recording != nil {
+            onUnreachableWhileRecording?(name)
+        }
         if recording == nil, let p = peripheral {
             // Not recording: stop waiting. While recording the pending connect
             // stays so a meter that comes back later resumes the session.

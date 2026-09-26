@@ -23,7 +23,7 @@ struct ContentView: View {
             LiveView()
                 .tabItem { Label("Live", systemImage: "waveform.path.ecg") }
                 .tag(AppRouter.Tab.live)
-            HistoryView()
+            SessionsListView()
                 .tabItem { Label("Sessions", systemImage: "clock.arrow.circlepath") }
                 .tag(AppRouter.Tab.sessions)
         }
