@@ -1,15 +1,15 @@
 # FNIRSI FNB58 Web Monitor · WattBench for iPhone
 
 <p align="center">
-  <a href="https://apps.apple.com/us/app/id6816404264"><img src="docs/assets/icon.png" width="128" alt="WattBench app icon"></a>
+  <a href="https://apps.apple.com/us/app/id6816404264"><img src="https://redthoroughbred.github.io/wattbench/assets/icon.png" width="128" alt="WattBench app icon"></a>
 </p>
 <h2 align="center">WattBench — live power meter for the FNB58, on your iPhone</h2>
 <p align="center">
-  <a href="https://apps.apple.com/us/app/id6816404264"><img src="docs/assets/badge-black.svg" height="50" alt="Download on the App Store"></a>
+  <a href="https://apps.apple.com/us/app/id6816404264"><img src="https://redthoroughbred.github.io/wattbench/assets/badge-black.svg" height="50" alt="Download on the App Store"></a>
 </p>
 <p align="center">
-  <a href="https://redthoroughbred.github.io/FNB58-MacOS/">Website</a> ·
-  <a href="https://redthoroughbred.github.io/FNB58-MacOS/guide.html">User guide</a> ·
+  <a href="https://redthoroughbred.github.io/wattbench/">Website</a> ·
+  <a href="https://redthoroughbred.github.io/wattbench/guide.html">User guide</a> ·
   <a href="PRIVACY.md">Privacy policy</a> ·
   <a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">Support</a>
 </p>
@@ -21,10 +21,10 @@ ads, no analytics, no network access — your data stays on your phone. **iPhone
 
 <table>
   <tr>
-    <td align="center"><img src="docs/assets/01-live.png" width="200" alt="Live view"><br><em>Live instrument face</em></td>
-    <td align="center"><img src="docs/assets/02-recording.png" width="200" alt="Recording"><br><em>Recording with Wh / mAh</em></td>
-    <td align="center"><img src="docs/assets/03-sessions.png" width="200" alt="Sessions"><br><em>Sessions</em></td>
-    <td align="center"><img src="docs/assets/04-session-detail-dark.png" width="200" alt="Session report"><br><em>Session report (dark)</em></td>
+    <td align="center"><img src="https://redthoroughbred.github.io/wattbench/assets/01-live.png" width="200" alt="Live view"><br><em>Live instrument face</em></td>
+    <td align="center"><img src="https://redthoroughbred.github.io/wattbench/assets/02-recording.png" width="200" alt="Recording"><br><em>Recording with Wh / mAh</em></td>
+    <td align="center"><img src="https://redthoroughbred.github.io/wattbench/assets/03-sessions.png" width="200" alt="Sessions"><br><em>Sessions</em></td>
+    <td align="center"><img src="https://redthoroughbred.github.io/wattbench/assets/04-session-detail-dark.png" width="200" alt="Session report"><br><em>Session report (dark)</em></td>
   </tr>
 </table>
 
@@ -280,8 +280,8 @@ sudo udevadm trigger
 Want the readings on your phone instead of a browser? **[WattBench](https://apps.apple.com/us/app/id6816404264)**
 connects to the FNB58 **directly over Bluetooth LE** — no Mac or server needed — with live
 readouts and charts, a trip counter, crash-safe background recording, session reports, alerts and
-CSV export. See the [website](https://redthoroughbred.github.io/FNB58-MacOS/) and the
-[user guide](https://redthoroughbred.github.io/FNB58-MacOS/guide.html).
+CSV export. See the [website](https://redthoroughbred.github.io/wattbench/) and the
+[user guide](https://redthoroughbred.github.io/wattbench/guide.html).
 
 Because iPhones can't act as a USB host, the app only gets what the meter sends over BLE
 (V, I, W). D+/D-, temperature and protocol triggering remain features of this desktop monitor

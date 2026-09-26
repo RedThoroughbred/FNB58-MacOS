@@ -519,11 +519,11 @@ python -m pytest                      # backend: decoders, DeviceManager, Flask 
 python test_setup.py                  # dependency sanity check
 ```
 
-### Website (`docs/`)
-Static GitHub Pages site for the WattBench iPhone app (landing page, user guide, privacy page),
-served from `main` / `docs/`. Plain HTML + one stylesheet, no build step. `PRIVACY.md` at the repo
-root is the canonical privacy policy: the App Store listing and the app link to it, so keep that
-path stable. The iPhone app's source lives in a separate private repository.
+### Website
+The WattBench website lives in the separate public repo `RedThoroughbred/RedThoroughbred.github.io`
+(served at https://redthoroughbred.github.io/wattbench/). `PRIVACY.md` at this repo's root is the canonical
+privacy policy: the App Store listing and the app link to it, so keep that path stable. The iPhone app's
+source lives in a separate private repository.
 
 ### Connect to Device
 ```bash
