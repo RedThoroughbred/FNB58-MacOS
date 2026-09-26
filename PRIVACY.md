@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: September 25, 2026_
+_Last updated: September 26, 2026_
 
 This policy covers the **iPhone app** in this repository (the Bluetooth companion app for the FNIRSI FNB58 USB power meter) and the **desktop web monitor**.
 
@@ -18,7 +18,7 @@ This policy covers the **iPhone app** in this repository (the Bluetooth companio
 
 ## Permissions
 
-- **Bluetooth** — required to discover and connect to the power meter. The app never scans in the background. Bluetooth stays connected in the background only while a recording is in progress, so the recording continues with the screen locked; nothing is transmitted anywhere.
+- **Bluetooth** — required to discover and connect to the power meter. The app never scans in the background. The connection to your meter stays active in the background only while you are connected to it, so a recording continues with the screen locked; disconnect to end it. Nothing is transmitted anywhere.
 - **Notifications** (optional) — local notifications only, for alert rules and finished recordings you set up yourself. There is no push service.
 
 ## Desktop web monitor
