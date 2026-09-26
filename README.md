@@ -296,7 +296,7 @@ cd ios && xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
 ```
 
 On the phone: turn the FNB58 on, enable Bluetooth in its settings menu, open the app, tap
-**Connect**, pick the meter. The Simulator has no Bluetooth radio — use **Try with demo data** there.
+**Connect**, pick the meter. The Simulator has no Bluetooth radio — use **Try Demo Data** there.
 
 The [user guide](https://redthoroughbred.github.io/FNB58-MacOS/guide.html) covers every screen and setting; the site itself is served from [`docs/`](docs/) by GitHub Pages.
 
