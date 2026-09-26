@@ -119,6 +119,7 @@ struct RollingNumber: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .monospacedDigit()
             .contentTransition(reduceMotion ? .identity : .numericText(value: value))
             .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: value)
     }

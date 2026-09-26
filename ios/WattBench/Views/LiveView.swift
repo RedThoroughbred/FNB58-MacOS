@@ -179,19 +179,6 @@ struct LiveCard: ViewModifier {
     }
 }
 
-/// Rolling digits for a number that changes, disabled under Reduce Motion.
-struct RollingNumber: ViewModifier {
-    let value: Double
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func body(content: Content) -> some View {
-        content
-            .monospacedDigit()
-            .contentTransition(reduceMotion ? .identity : .numericText(value: value))
-            .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: value)
-    }
-}
-
 /// Haptics for interactions the shared `FeedbackModifiers` do not cover
 /// (metric switch, trip reset, markers), gated on Reduce Motion and the
 /// haptics preference.
@@ -211,10 +198,6 @@ struct LiveFeedback<Trigger: Equatable>: ViewModifier {
 extension View {
     func liveCard(padding: CGFloat = 16) -> some View {
         modifier(LiveCard(padding: padding))
-    }
-
-    func rollingNumber(_ value: Double) -> some View {
-        modifier(RollingNumber(value: value))
     }
 
     func liveFeedback<T: Equatable>(_ feedback: SensoryFeedback, trigger: T) -> some View {
