@@ -136,7 +136,25 @@ struct ThresholdMonitor {
         }
         rules = new
         states = kept
-        needsRing = new.contains { $0.enabled && $0.kind == .voltageDrop }
+        // One pass over the new rules for everything the hot path asks per
+        // sample, so those reads never loop or allocate.
+        var dropRule = false
+        var disconnectRule = false
+        var notifySeconds: TimeInterval?
+        for rule in new where rule.enabled {
+            switch rule.kind {
+            case .voltageDrop:
+                dropRule = true
+            case .disconnected:
+                disconnectRule = true
+                if rule.notify { notifySeconds = min(notifySeconds ?? rule.forSeconds, rule.forSeconds) }
+            case .threshold:
+                break
+            }
+        }
+        needsRing = dropRule
+        hasEnabledDisconnectRule = disconnectRule
+        disconnectNotifySeconds = notifySeconds
         if !needsRing { ring.removeAll() }
     }
 
@@ -146,16 +164,13 @@ struct ThresholdMonitor {
         return states[i]
     }
 
-    /// True while an enabled `.disconnected` rule exists.
-    var hasEnabledDisconnectRule: Bool {
-        rules.contains { $0.enabled && $0.kind == .disconnected }
-    }
+    /// True while an enabled `.disconnected` rule exists. Cached by
+    /// `setRules`; the coordinator reads it on every sample.
+    private(set) var hasEnabledDisconnectRule = false
 
     /// Shortest wait among the enabled `.disconnected` rules that want a
-    /// background notification; nil when there is none.
-    var disconnectNotifySeconds: TimeInterval? {
-        rules.filter { $0.enabled && $0.notify && $0.kind == .disconnected }.map(\.forSeconds).min()
-    }
+    /// background notification; nil when there is none. Cached by `setRules`.
+    private(set) var disconnectNotifySeconds: TimeInterval?
 
     /// True while an enabled `.disconnected` rule is armed, i.e. `tick` could
     /// still fire something.

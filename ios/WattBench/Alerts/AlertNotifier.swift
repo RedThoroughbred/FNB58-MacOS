@@ -47,10 +47,13 @@ protocol AlertNotifying: AnyObject {
 /// which happens inside `WattBenchApp.init` (before the app finishes
 /// launching, as the delegate must be).
 ///
-/// Delivery policy: alerts use the in-app banner while the app is active, so
-/// `willPresent` suppresses every system banner except the test one; the
-/// "Stop & save" action is forwarded to `onStopAndSave` on the main actor.
-/// Interruption level is `.active` (no time-sensitive entitlement).
+/// Delivery policy: alerts use the in-app banner while the app is in front
+/// (`.active` or `.inactive`), so `willPresent` suppresses every system
+/// banner except the test one, and except when the app is `.inactive`, where
+/// a pending notification (the disconnect dead man's switch) landing behind
+/// Control Center or the app switcher would otherwise be dropped silently;
+/// the "Stop & save" action is forwarded to `onStopAndSave` on the main
+/// actor. Interruption level is `.active` (no time-sensitive entitlement).
 @MainActor
 final class AlertNotifier: NSObject, AlertNotifying {
     nonisolated static let stopAndSaveAction = "wattbench.stopAndSave"
@@ -66,8 +69,12 @@ final class AlertNotifier: NSObject, AlertNotifying {
         registerCategories()
     }
 
+    /// Only `.background` counts as "not in front": while the app is merely
+    /// `.inactive` (Control Center, the app switcher, an incoming call) its
+    /// window is still on screen, so the in-app banner is the right delivery
+    /// and a system notification would only be suppressed by `willPresent`.
     var isAppActive: Bool {
-        UIApplication.shared.applicationState == .active
+        UIApplication.shared.applicationState != .background
     }
 
     func authorizationStatus() async -> NotificationAuthorization {
@@ -122,25 +129,38 @@ final class AlertNotifier: NSObject, AlertNotifying {
 }
 
 // MARK: - UNUserNotificationCenterDelegate
-// The center does not promise a queue, so these hop to the main actor.
+// The center does not promise a queue, so these hop to the main actor. The
+// completion handlers are plain (non-Sendable) closures the system hands us;
+// calling them from the main queue is fine, so the capture is marked as such.
 
 extension AlertNotifier: UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification,
                                             withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let isTest = notification.request.content.categoryIdentifier == AlertNotification.Category.test.rawValue
-        completionHandler(isTest ? [.banner, .list, .sound] : [])
+        if isTest {
+            completionHandler([.banner, .list, .sound])
+            return
+        }
+        nonisolated(unsafe) let finish = completionHandler
+        DispatchQueue.main.async {
+            // In front: the in-app banner is the delivery. Behind Control Center
+            // or the app switcher (`.inactive`) nothing of ours is visible, so show it.
+            let inactive = MainActor.assumeIsolated { UIApplication.shared.applicationState == .inactive }
+            finish(inactive ? [.banner, .list, .sound] : [])
+        }
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
         let isStopAndSave = response.actionIdentifier == Self.stopAndSaveAction
+        nonisolated(unsafe) let finish = completionHandler
         DispatchQueue.main.async {
             if isStopAndSave {
                 MainActor.assumeIsolated { self.onStopAndSave?() }
             }
-            completionHandler()
+            finish()
         }
     }
 }

@@ -274,6 +274,28 @@ final class AlertCoordinatorTests: XCTestCase {
         XCTAssertEqual(alerts.alertEventCount, 1, "no recording, no disconnect alerts")
     }
 
+    func testForegroundDisconnectBannerCancelsThePendingSwitchUntilTheMeterIsBack() throws {
+        let notifier = MockNotifier()
+        let alerts = AlertCoordinator(preferences: try makePrefs(), notifier: notifier)
+        alerts.rules = [AlertRule(.disconnected, value: 0, seconds: 10)]
+
+        alerts.observe(reading(at: 0), context: context(recording: true))
+        XCTAssertEqual(notifier.posted.count, 1, "the switch is pending")
+        XCTAssertTrue(notifier.cancelled.isEmpty)
+
+        // The banner announces the disconnection; the switch must not repeat it.
+        alerts.checkDisconnect(now: t0.addingTimeInterval(10))
+        XCTAssertEqual(alerts.active.count, 1)
+        XCTAssertEqual(notifier.cancelled, [AlertCoordinator.disconnectWatchIdentifier])
+        XCTAssertEqual(notifier.posted.count, 1, "in front, the banner is the delivery")
+
+        // The meter comes back: the rule re-arms and the switch is pending again.
+        alerts.observe(reading(at: 30), context: context(recording: true))
+        XCTAssertEqual(notifier.posted.count, 2)
+        XCTAssertEqual(notifier.posted.last?.identifier, AlertCoordinator.disconnectWatchIdentifier)
+        XCTAssertEqual(alerts.alertEventCount, 1)
+    }
+
     // MARK: - Recording notices
 
     func testRecordingFinishedNoticeIsPostedOnlyInTheBackground() throws {

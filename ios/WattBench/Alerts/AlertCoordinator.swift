@@ -322,7 +322,11 @@ final class AlertCoordinator: SampleObserver {
     @ObservationIgnored private var watchPending = false
     @ObservationIgnored private var formatterKey: (precision: Int, autoRange: Bool)
 
-    init(preferences: Preferences = .shared, notifier: (any AlertNotifying)? = nil) {
+    /// `preferences` defaults to `Preferences.shared`; the fallback is resolved
+    /// in the body because default-argument expressions are not main-actor
+    /// isolated in Swift 5 mode.
+    init(preferences: Preferences? = nil, notifier: (any AlertNotifying)? = nil) {
+        let preferences = preferences ?? Preferences.shared
         prefs = preferences
         self.notifier = notifier ?? AlertNotifier()
         let loaded = Self.decodeRules(preferences.alertRulesData)
@@ -471,7 +475,15 @@ final class AlertCoordinator: SampleObserver {
         if active.count > Self.maxActive { active.removeFirst(active.count - Self.maxActive) }
         alertEventCount += 1
         onAlert?(event)
-        guard !notifier.isAppActive, let rule = rules.first(where: { $0.id == event.ruleID }), rule.notify else { return }
+        guard let rule = rules.first(where: { $0.id == event.ruleID }) else { return }
+        if notifier.isAppActive {
+            // The banner has announced the disconnection; drop the pending
+            // dead man's switch so backgrounding within its window does not
+            // announce it a second time. The next sample re-arms it.
+            if rule.kind == .disconnected { cancelDisconnectWatch() }
+            return
+        }
+        guard rule.notify else { return }
         let identifier = rule.kind == .disconnected ? Self.disconnectWatchIdentifier : event.ruleID.uuidString
         notifier.post(AlertNotification(identifier: identifier,
                                         category: isRecording ? .recordingAlert : .alert,
