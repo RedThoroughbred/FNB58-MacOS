@@ -9,6 +9,8 @@ App Store Connect enforces them.
 |---|---|
 | Name (30) | WattBench |
 | Subtitle (30) | Live power meter for FNB58 |
+| Price | $2.99 (USD base tier; comparable prices in 175 storefronts) |
+| Apple ID | 6816404264 |
 | Bundle ID | com.thebench.wattbench |
 | SKU | wattbench-ios |
 | Primary language | English (U.S.) |
@@ -16,7 +18,7 @@ App Store Connect enforces them.
 | Secondary category | Developer Tools |
 | Content rights | Does not contain third-party content |
 | Age rating | 4+ (no questionable content in any category) |
-| Price | Free |
+| Availability | All 175 countries/regions |
 | Privacy policy URL | https://github.com/RedThoroughbred/FNB58-MacOS/blob/main/PRIVACY.md |
 | Support URL | https://github.com/RedThoroughbred/FNB58-MacOS/issues |
 | Marketing URL | https://github.com/RedThoroughbred/FNB58-MacOS |
@@ -51,7 +53,7 @@ WattBench is an independent project and is not affiliated with or endorsed by FN
 
 ## Keywords (100, comma-separated)
 
-FNB58,FNIRSI,USB power meter,USB tester,voltage,current,watt,charger,battery capacity,mAh,data logger
+FNB58,FNIRSI,USB power meter,voltage,current,watt,charger,battery capacity,mAh,data logger,bench
 
 ## What's New (1.1)
 
@@ -104,3 +106,12 @@ iPhone 6.9" (1320 × 2868) — `ios/AppStore/screenshots/`. The app is iPhone-on
 
 Captured from the iPhone 17 Pro Max simulator in demo mode (`xcrun simctl io <udid> screenshot`).
 Replace with real-meter captures from an iPhone when available — same sizes.
+
+
+## Status (2026-09-26)
+
+Entered in App Store Connect: name, subtitle, categories (Utilities / Developer Tools), content rights,
+age rating 4+, privacy policy URL + "Data Not Collected" (published), price $2.99, availability worldwide,
+DSA non-trader declaration, description/promo/keywords/URLs/review notes, 7 screenshots (4 light, 3 dark,
+6.5" 1284x2778 from `screenshots/6.5/`). Pending: App Review contact phone/email, build upload
+(Xcode Organizer), attach build, Submit for Review.
