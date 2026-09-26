@@ -4,7 +4,7 @@ Framing rule: Car-Part.com is the job; the apps are a side practice. Every secti
 explicitly, so nobody reads "Founder" as "left his job".
 
 Links
-- Repot: Plant Care — https://apps.apple.com/us/app/repot-plant-care/id6790598058
+- Repot: Plant Care — https://apps.apple.com/us/app/repot-plant-care/id6790598058 · website https://therepotapp.com (pay once, no subscription; 417 offline guides; worm bins)
 - WattBench — https://apps.apple.com/us/app/id6816404264 (live after App Review)
 - GitHub — https://github.com/RedThoroughbred
 
@@ -187,3 +187,14 @@ the AI-consulting/training framing directly and back-links the book.
 ### Featured
 - Featured → + → Add a link with the Medium URL. Medium serves an `og:image`, so LinkedIn's
   preview works here (unlike the apps.apple.com links).
+
+---
+
+## Repot website (therepotapp.com) — added 2026-09-26
+
+The site has proper `og:image`/`og:title` ("Repot — Plant care & worm compost"). Where it goes:
+- Featured: `+` → Add a link → https://therepotapp.com (preview should work; fallback is the
+  image card `featured-repot-v2.png`, which now carries therepotapp.com next to the badge).
+- Repot Featured card description: append "Website: therepotapp.com".
+- Top card (Edit intro → Website): https://therepotapp.com, link text "Repot: Plant Care".
+- Experience / Projects descriptions: add "therepotapp.com" after the App Store link.
