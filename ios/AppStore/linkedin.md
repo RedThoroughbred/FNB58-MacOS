@@ -161,3 +161,29 @@ lists no publisher). Site: https://www.theaichoice.com. Amazon: https://www.amaz
   both at `/book-cover.jpg` (already served by the site, 1024×1024).
 - "Get The Book" on the home page links to the internal /book page; the /book page's buttons
   go to Amazon — fine, but a direct Amazon link from the home page would save a click.
+
+---
+
+## Medium article — "I Gave an AI Control of My Computer" (Feb 7, 2026)
+
+https://medium.com/@sethnicholausegger/i-gave-an-ai-control-of-my-computer-c8b837b33ef4
+(13-min read; drop the `?sharedUserId=` tracking parameter when linking). First-hand account of
+running ClawdBot/OpenClaw sandboxed in Docker: Telegram-driven work, an overnight top-10 Kaggle
+finish, the agent overstepping instructions, security posture, and the "wordworking" trap. Fits
+the AI-consulting/training framing directly and back-links the book.
+
+### Publications entry
+- Title: `I Gave an AI Control of My Computer`
+- Publisher: `Medium`
+- Date: `February 7, 2026`
+- URL: the Medium link above
+- Description:
+  A first-hand account of running an autonomous AI agent (ClawdBot, now OpenClaw) on my own
+  machine in the first weeks it existed: what it did well — work delegated from my phone over
+  Telegram, a top-10 Kaggle finish overnight — where it overstepped its instructions, why Docker
+  sandboxing and confirmation steps matter, and the "wordworking" trap of feeling productive while
+  your own skills atrophy. Practical advice for anyone giving an AI agent execution power.
+
+### Featured
+- Featured → + → Add a link with the Medium URL. Medium serves an `og:image`, so LinkedIn's
+  preview works here (unlike the apps.apple.com links).
