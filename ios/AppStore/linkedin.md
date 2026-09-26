@@ -122,28 +122,42 @@ Bluetooth Low Energy · Product Design
 
 ---
 
-## Book — "The AI Choice: Into the Light, Into the Dark" (theaichoice.com)
+## Book — "The AI Choice: Into the Light, Into the Dark" (published November 14, 2025)
+
+Facts (from the Amazon listing, ASIN B0FWPPNT9Y): published November 14, 2025; 210 pages;
+Kindle $7.99 (also in Kindle Unlimited), paperback $25, hardcover $40; self-published (Amazon
+lists no publisher). Site: https://www.theaichoice.com. Amazon: https://www.amazon.com/dp/B0FWPPNT9Y.
 
 ### Publications entry (Add section → Additional → Publications)
 - Title: `The AI Choice: Into the Light, Into the Dark`
-- Publisher: `[self-published / imprint]`
-- Publication date: `[November 2026 — exact day]` (LinkedIn may not accept a future date; if so leave the date empty and say "forthcoming, November 2026" in the description)
-- Publication URL: `https://www.theaichoice.com`
-- Description:
-  A guide to making conscious choices in the age of artificial intelligence. Part I, Into the
-  Dark, faces the hard realities — economic displacement, social fragmentation, loss of
-  authenticity. Part II, Into the Light, lays out the opportunities — abundance, enhanced
-  creativity, global problem-solving. Part III, Your Choice, gives practical frameworks for
-  conscious engagement: the Crawl / Walk / Run framework, daily practices and an action toolkit.
-  Written from the perspective of someone who builds with AI every day and knows from personal
-  experience how systems exploit human psychology at scale.
+- Publisher: `Self-published (Amazon KDP)`
+- Publication date: `November 14, 2025`
+- Publication URL: `https://www.amazon.com/dp/B0FWPPNT9Y`
+- Description (LinkedIn allows 2,000 chars):
+  What if the same minds that engineered social media's infinite scroll are now building AI?
+  The AI Choice looks at artificial intelligence through a lens no other AI book uses: the
+  hard-earned pattern recognition of addiction recovery. Part I, Into the Dark, faces the
+  immediate dangers — engineered dependency, mass job displacement, the loss of authenticity.
+  Part II, Into the Light, lays out the opportunities in healthcare, education, creativity and
+  problem-solving at scale. Part III, Choosing Our Future, gives practical frameworks for
+  conscious engagement instead of unconscious drift. 210 pages. Available in Kindle, paperback
+  and hardcover.
 
 ### Featured card
-- Best: a card with the actual cover (needs the cover image file) + "Coming November 2026" + theaichoice.com.
-- Fallback: link card to https://www.theaichoice.com — note the site currently has no og:image, so
-  LinkedIn's preview would be text-only; the custom card is much stronger.
+- `ios/AppStore/badges/featured-book.png` — 1200×627 card with the real cover
+  (`book-cover.jpg` from theaichoice.com), title, one-line pitch, "Published November 2025 ·
+  210 pages · Kindle, paperback, hardcover" and an "Available on Amazon" line. Added via
+  Featured → + → Add an image, like the Repot card.
+- Card title: `The AI Choice: Into the Light, Into the Dark — my book (Nov 2025)`
+- Card description: "A guide to making conscious choices in the age of AI, written from the
+  perspective of someone who builds with it every day and knows how systems exploit human
+  psychology at scale. Kindle, paperback and hardcover: amazon.com/dp/B0FWPPNT9Y · theaichoice.com"
 
-### Site fixes spotted (theaichoice.com)
-- `og:description` still says "Pre-order now for November 14, 2025 release" — a year stale.
-- `og:url` points to https://getwithit.ai rather than theaichoice.com.
-- No `og:image`, so link previews on LinkedIn/Slack/iMessage show no picture — add the cover.
+### Site fixes spotted (theaichoice.com, Next.js)
+- `og:description` still says "Pre-order now for November 14, 2025 release" — the book has
+  been out since then; say "Available now in Kindle, paperback and hardcover."
+- `og:url` points to https://getwithit.ai rather than https://www.theaichoice.com.
+- No `og:image` / `twitter:image`, so LinkedIn/Slack/iMessage previews show no picture — point
+  both at `/book-cover.jpg` (already served by the site, 1024×1024).
+- "Get The Book" on the home page links to the internal /book page; the /book page's buttons
+  go to Amazon — fine, but a direct Amazon link from the home page would save a click.
