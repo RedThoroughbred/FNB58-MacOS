@@ -41,6 +41,18 @@ enum Metric: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// SF Symbol used where a metric needs a glyph (pickers, menus).
+    var symbolName: String {
+        switch self {
+        case .voltage: return "bolt"
+        case .current: return "arrow.right.circle"
+        case .power: return "flame"
+        }
+    }
+
+    /// The other two metrics, in their canonical order.
+    var others: [Metric] { Metric.allCases.filter { $0 != self } }
+
     func value(_ r: Reading) -> Double {
         switch self {
         case .voltage: return r.voltage
