@@ -10,8 +10,11 @@ struct WattBenchApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        let meter = MeterManager()
+        // The store first: its load seals any recording that was interrupted
+        // by a crash or force-quit (offered below, never resumed), and the
+        // meter journals new recordings into the same folder.
         let store = SessionStore()
+        let meter = MeterManager(sessionsDirectory: store.directory)
         let prefs = Preferences.shared
         let router = AppRouter()
         let alerts = AlertCoordinator()
@@ -46,9 +49,39 @@ struct WattBenchApp: App {
                 .environment(prefs)
                 .environment(router)
                 .environment(alerts)
-                .onChange(of: scenePhase) { _, phase in
-                    if phase == .background { meter.persistTrips() }
+                // Single presenter of the recovery prompt (the Sessions list
+                // only shows a passive "Recovered" badge).
+                .sheet(item: interruptedRecording) { summary in
+                    RecoverySheet(summary: summary)
+                        .environment(store)
+                        .environment(prefs)
                 }
+                // `initial: true` matters for a relaunch by CoreBluetooth
+                // state restoration, which starts in the background.
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    meter.scene = Self.presence(of: phase)
+                }
+                .onChange(of: prefs.excludeDemoFromTrips) { _, on in
+                    meter.excludeDemoFromTrips = on
+                }
+                .onChange(of: prefs.autoConnect) { _, on in
+                    meter.autoConnectOnLaunch = on
+                }
+        }
+    }
+
+    /// The sheet is dismissed only by Keep or Discard, both of which clear
+    /// `store.interrupted`; setting the binding to nil is therefore a no-op.
+    private var interruptedRecording: Binding<SessionSummary?> {
+        Binding(get: { store.interrupted }, set: { _ in })
+    }
+
+    private static func presence(of phase: ScenePhase) -> MeterManager.ScenePresence {
+        switch phase {
+        case .active: return .active
+        case .inactive: return .inactive
+        case .background: return .background
+        @unknown default: return .active
         }
     }
 }

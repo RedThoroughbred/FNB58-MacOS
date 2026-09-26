@@ -98,6 +98,15 @@ final class SamplePipeline {
         return pendingAutoStop
     }
 
+    /// Republishes the chart from the ring without a new sample (the 200 ms
+    /// refresh timer while connected), so a stalled stream still shows its
+    /// trailing gap and stale state. Does not disturb the ingest throttle.
+    @discardableResult
+    func refreshChart(at now: Date) -> ChartSnapshot {
+        chart = ChartSnapshot.make(from: history.array(), at: now)
+        return chart
+    }
+
     func clearHistory() {
         history.removeAll()
         chart = .empty

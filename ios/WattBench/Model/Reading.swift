@@ -67,6 +67,10 @@ struct SessionStats: Codable, Equatable {
     /// interval has been integrated.
     var avgPower: Double { durationS > 0 ? energyWh * 3600 / durationS : meanPowerSampled }
 
+    /// Bookkeeping for `dt(to:)`. Both are ignored by `==` (a decoded copy
+    /// must compare equal to the live value it was written from; `Date` does
+    /// not survive a JSON round trip bit for bit, and `lastMonotonic` is
+    /// process-local and never persisted).
     private var lastTimestamp: Date?
     private var lastMonotonic: TimeInterval?
 
@@ -75,6 +79,15 @@ struct SessionStats: Codable, Equatable {
     static let maxGapS: TimeInterval = 5
 
     init() {}
+
+    static func == (a: SessionStats, b: SessionStats) -> Bool {
+        a.samples == b.samples && a.minVoltage == b.minVoltage && a.maxVoltage == b.maxVoltage
+            && a.minCurrent == b.minCurrent && a.maxCurrent == b.maxCurrent && a.maxPower == b.maxPower
+            && a.avgVoltage == b.avgVoltage && a.avgCurrent == b.avgCurrent
+            && a.meanPowerSampled == b.meanPowerSampled && a.energyWh == b.energyWh
+            && a.capacityAh == b.capacityAh && a.durationS == b.durationS
+            && a.gapCount == b.gapCount && a.gapSeconds == b.gapSeconds
+    }
 
     /// Interval from the last added reading to `r`, using the rule in
     /// `add(_:)`. 0 for the first reading.
@@ -273,12 +286,39 @@ struct Session: Codable, Identifiable, Equatable {
     /// `marker_label` (markers that fall at or before the row, "; " joined)
     /// follow.
     func csv() -> String {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        var out = "timestamp,voltage_v,current_a,power_w,elapsed_s,marker_label\n"
-        out.reserveCapacity(readings.count * 56)
+        var out = Self.csvHeader
+        out.reserveCapacity(readings.count * 60)
+        forEachCSVChunk { out += $0 }
+        return out
+    }
+
+    /// Streams the same CSV to `url` in 64 KB chunks so a 100k-row session
+    /// never needs its whole text in memory.
+    func writeCSV(to url: URL) throws {
+        guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
+            throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path])
+        }
+        let handle = try FileHandle(forWritingTo: url)
+        defer { try? handle.close() }
+        try handle.write(contentsOf: Data(Self.csvHeader.utf8))
+        var failure: Error?
+        forEachCSVChunk { chunk in
+            guard failure == nil else { return }
+            do { try handle.write(contentsOf: Data(chunk.utf8)) } catch { failure = error }
+        }
+        if let failure { throw failure }
+    }
+
+    static let csvHeader = "timestamp,voltage_v,current_a,power_w,elapsed_s,marker_label\n"
+    private static let csvChunkSize = 64 * 1024
+
+    /// Builds the rows into chunks of about `csvChunkSize` bytes.
+    private func forEachCSVChunk(_ emit: (String) -> Void) {
         let sortedMarkers = markers.sorted { $0.timestamp < $1.timestamp }
         var nextMarker = 0
+        var chunk = ""
+        chunk.reserveCapacity(Self.csvChunkSize + 256)
+        let start = startTime.timeIntervalSince1970
         for (index, r) in readings.enumerated() {
             var labels: [String] = []
             let isLast = index == readings.count - 1
@@ -287,16 +327,78 @@ struct Session: Codable, Identifiable, Equatable {
                 labels.append(sortedMarkers[nextMarker].label)
                 nextMarker += 1
             }
-            let elapsed = (r.timestamp.timeIntervalSince(startTime) * 1000).rounded() / 1000
-            out += "\(f.string(from: r.timestamp)),\(r.voltage),\(r.current),\(r.power),\(elapsed),"
-            out += Self.csvField(labels.joined(separator: "; "))
-            out += "\n"
+            let elapsed = ((r.timestamp.timeIntervalSince1970 - start) * 1000).rounded() / 1000
+            chunk += ISO8601Millis.string(r.timestamp)
+            chunk += ",\(r.voltage),\(r.current),\(r.power),\(elapsed),"
+            chunk += Self.csvField(labels.joined(separator: "; "))
+            chunk += "\n"
+            if chunk.utf8.count >= Self.csvChunkSize {
+                emit(chunk)
+                chunk.removeAll(keepingCapacity: true)
+            }
         }
-        return out
+        if !chunk.isEmpty { emit(chunk) }
     }
 
     private static func csvField(_ s: String) -> String {
         guard s.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return s }
         return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+}
+
+/// UTC timestamps in the form `2026-09-25T14:02:11.123Z`, byte for byte what
+/// `ISO8601DateFormatter` produces with `.withInternetDateTime` and
+/// `.withFractionalSeconds` (the 1.0 CSV format), computed with integer
+/// arithmetic so a 100k-row export formats in well under a second.
+enum ISO8601Millis {
+    static func string(_ date: Date) -> String {
+        var bytes = [UInt8](repeating: 0, count: 24)
+        let totalMs = Int64((date.timeIntervalSince1970 * 1000).rounded())
+        let msPerDay: Int64 = 86_400_000
+        var days = totalMs / msPerDay
+        var rem = totalMs - days * msPerDay
+        if rem < 0 {
+            rem += msPerDay
+            days -= 1
+        }
+        let (y, m, d) = civil(fromDays: days)
+        put(&bytes, y, at: 0, width: 4)
+        bytes[4] = UInt8(ascii: "-")
+        put(&bytes, m, at: 5, width: 2)
+        bytes[7] = UInt8(ascii: "-")
+        put(&bytes, d, at: 8, width: 2)
+        bytes[10] = UInt8(ascii: "T")
+        put(&bytes, rem / 3_600_000, at: 11, width: 2)
+        bytes[13] = UInt8(ascii: ":")
+        put(&bytes, (rem / 60_000) % 60, at: 14, width: 2)
+        bytes[16] = UInt8(ascii: ":")
+        put(&bytes, (rem / 1000) % 60, at: 17, width: 2)
+        bytes[19] = UInt8(ascii: ".")
+        put(&bytes, rem % 1000, at: 20, width: 3)
+        bytes[23] = UInt8(ascii: "Z")
+        return String(decoding: bytes, as: UTF8.self)
+    }
+
+    /// Proleptic Gregorian date for a day count since 1970-01-01
+    /// (Howard Hinnant's `civil_from_days`).
+    private static func civil(fromDays z0: Int64) -> (Int64, Int64, Int64) {
+        let z = z0 + 719_468
+        let era = (z >= 0 ? z : z - 146_096) / 146_097
+        let doe = z - era * 146_097
+        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+        let mp = (5 * doy + 2) / 153
+        let d = doy - (153 * mp + 2) / 5 + 1
+        let m = mp < 10 ? mp + 3 : mp - 9
+        let y = yoe + era * 400 + (m <= 2 ? 1 : 0)
+        return (y, m, d)
+    }
+
+    private static func put(_ bytes: inout [UInt8], _ value: Int64, at index: Int, width: Int) {
+        var v = max(0, value)
+        for k in stride(from: width - 1, through: 0, by: -1) {
+            bytes[index + k] = UInt8(ascii: "0") + UInt8(v % 10)
+            v /= 10
+        }
     }
 }

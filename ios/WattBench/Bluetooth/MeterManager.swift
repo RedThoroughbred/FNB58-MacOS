@@ -21,17 +21,31 @@ struct LogEntry: Identifiable {
 /// the session recorder. Everything runs on the main actor (the central is
 /// created with the main queue).
 ///
+/// Background: the central is created with a restore identifier and the app
+/// declares `bluetooth-central`, so a connected meter keeps delivering
+/// notifications with the screen locked and a relaunch by the system
+/// (`willRestoreState`) re-adopts the peripheral. A recording is never
+/// resumed by a relaunch; `SessionStore` offers the interrupted one for
+/// recovery instead.
+///
 /// Reconnect: on an unexpected disconnect a `connect` is issued at once and
 /// left PENDING with CoreBluetooth, which completes it whenever the meter
-/// reappears (also in the background with `bluetooth-central`). The displayed
-/// state goes `.reconnecting` -> `.unreachable` after
-/// `ReconnectPolicy.giveUpAfter` seconds; the pending connect is only
-/// cancelled at that point when no recording is in progress.
+/// reappears (also in the background). The displayed state goes
+/// `.reconnecting` -> `.unreachable` after `ReconnectPolicy.giveUpAfter`
+/// seconds (a 1 s timer that only runs while the app is active); the pending
+/// connect is cancelled at that point only when no recording is in progress.
 @MainActor
 @Observable
 final class MeterManager: NSObject {
+    /// Foreground / background presence, mirrored from `scenePhase` by
+    /// `WattBenchApp`. Timers (chart refresh, RSSI, reconnect display) run
+    /// only while `.active`; `.background` checkpoints the recording.
+    enum ScenePresence: Equatable { case active, inactive, background }
+
     // MARK: Published state
-    private(set) var state: ConnectionState = .idle
+    private(set) var state: ConnectionState = .idle {
+        didSet { if state != oldValue { updateTimers() } }
+    }
     private(set) var devices: [DiscoveredDevice] = []
     /// Every reading at the meter's own rate (10 Hz). Views should prefer
     /// `display.latest`, which is throttled to 5 Hz.
@@ -46,6 +60,9 @@ final class MeterManager: NSObject {
     private(set) var extremes: Extremes
     private(set) var recording: SessionRecorder?
     private(set) var lastError: String?
+    /// Signal strength of the connected meter in dBm, read every
+    /// `rssiInterval` seconds while the app is active; nil when not connected.
+    private(set) var rssi: Int?
     private(set) var connectionEventCount = 0
     private(set) var recordingEventCount = 0
     private(set) var errorEventCount = 0
@@ -65,6 +82,13 @@ final class MeterManager: NSObject {
         get { pipeline.excludeDemoFromTrips }
         set { pipeline.excludeDemoFromTrips = newValue }
     }
+    /// Where recordings are journaled (`SessionStore.directory`). nil keeps
+    /// a recording in memory (tests, previews).
+    @ObservationIgnored var sessionsDirectory: URL?
+    /// Set by `WattBenchApp` from `scenePhase`.
+    var scene: ScenePresence = .active {
+        didSet { if scene != oldValue { sceneDidChange(from: oldValue) } }
+    }
     /// Invoked for every non-discarded stop (manual, auto-stop, notification
     /// action). `WattBenchApp` wires it to `SessionStore.save`.
     @ObservationIgnored var onRecordingStopped: (@MainActor (Session, AutoStopRule.Reason?) -> Void)?
@@ -80,13 +104,17 @@ final class MeterManager: NSObject {
     private(set) var discoveredGATT: [String] = []
     private(set) var framesReceived = 0
     private(set) var framesParsed = 0
+    /// Notifications the parser refused (short or out-of-range frames).
+    private(set) var framesRejected = 0
     private(set) var lastFrameHex = ""
 
     static let historyLimit = SamplePipeline.historyCapacity
+    nonisolated static let rssiInterval: TimeInterval = 5
     private static let logLimit = 400
     private static let lastDeviceKey = "lastDeviceIdentifier"
     private static let showAllDevicesKey = "showAllDevices"
     private static let tripKey = "trip.0"
+    private static let extremesKey = "extremes.0"
     private static let tripPersistInterval: TimeInterval = 10
 
     // MARK: Private
@@ -97,29 +125,39 @@ final class MeterManager: NSObject {
     @ObservationIgnored private var didStartStreaming = false
     @ObservationIgnored private var wantsAutoReconnect = false
     @ObservationIgnored private var didAutoConnect = false
-    @ObservationIgnored private var demoTimer: Timer?
-    @ObservationIgnored private var demoPhase = 0.0
+    /// A restore plan waiting for the central to report `.poweredOn`.
+    @ObservationIgnored private var pendingRestore: RestorePlan?
     @ObservationIgnored private var reconnectTimer: Timer?
+    @ObservationIgnored private var chartTimer: Timer?
+    @ObservationIgnored private var rssiTimer: Timer?
     @ObservationIgnored private var reconnectPolicy = ReconnectPolicy()
     @ObservationIgnored private let pipeline: SamplePipeline
     @ObservationIgnored private var observers: [any SampleObserver] = []
     @ObservationIgnored private var source: (any MeterSource)?
     @ObservationIgnored private var lastDisplayGeneration = 0
     @ObservationIgnored private var lastTripPersist = Date.distantPast
+    @ObservationIgnored private var lastIngest = Date.distantPast
     @ObservationIgnored private let defaults: UserDefaults
 
-    init(defaults: UserDefaults = .standard) {
+    /// `restoreIdentifier` nil skips CoreBluetooth state restoration (tests
+    /// create several managers in one process).
+    init(defaults: UserDefaults = .standard,
+         sessionsDirectory: URL? = SessionStore.defaultDirectory,
+         restoreIdentifier: String? = RestorePlan.identifier) {
         self.defaults = defaults
-        let trip = Self.loadTrip(from: defaults)
-        pipeline = SamplePipeline(trips: [trip], extremes: Extremes(since: Date()))
+        self.sessionsDirectory = sessionsDirectory
+        pipeline = SamplePipeline(trips: [Self.loadTrip(from: defaults)], extremes: Self.loadExtremes(from: defaults))
         trips = pipeline.trips
         extremes = pipeline.extremes
         showAllDevices = defaults.bool(forKey: Self.showAllDevicesKey)
         super.init()
         MonotonicClock.prime()
-        central = CBCentralManager(delegate: self, queue: .main,
-                                   options: [CBCentralManagerOptionShowPowerAlertKey: false])
-        logEvent("App started")
+        var options: [String: Any] = [CBCentralManagerOptionShowPowerAlertKey: false]
+        if let restoreIdentifier {
+            options[CBCentralManagerOptionRestoreIdentifierKey] = restoreIdentifier
+        }
+        central = CBCentralManager(delegate: self, queue: .main, options: options)
+        logEvent("App started\(restoreIdentifier != nil ? " (state restoration on)" : "")")
     }
 
     // MARK: - Scanning and connecting
@@ -154,6 +192,7 @@ final class MeterManager: NSObject {
 
     func disconnect() {
         wantsAutoReconnect = false
+        pendingRestore = nil
         stopReconnectTimer()
         stopDemo()
         if let p = peripheral {
@@ -186,7 +225,6 @@ final class MeterManager: NSObject {
             p.delegate = self
             wantsAutoReconnect = true
             state = .reconnecting(name: name, since: Date())
-            startReconnectTimer()
             logEvent("Retrying connection to \(name)")
             central.connect(p, options: nil)
         default:
@@ -212,25 +250,33 @@ final class MeterManager: NSObject {
 
     // MARK: - Recording
 
+    /// Starts a recording journaled under `sessionsDirectory` (in memory when
+    /// that is nil). A recording already in progress is stopped and saved.
     func startRecording(name: String, tags: [String] = [], notes: String? = nil, autoStop: AutoStopRule? = nil) {
         if recording != nil { stopRecording() }
-        recording = SessionRecorder(name: name, deviceName: state.label, tags: tags, notes: notes,
-                                    autoStop: autoStop, isDemo: state == .demo)
+        let rec = SessionRecorder(name: name, deviceName: recordingDeviceName, tags: tags, notes: notes,
+                                  autoStop: autoStop, isDemo: state == .demo, directory: sessionsDirectory)
+        recording = rec
         recordingEventCount += 1
-        logEvent("Recording started: \(name)\(autoStop != nil ? " (auto-stop armed)" : "")")
+        if let e = rec.journalError {
+            logEvent("Journal unavailable, recording stays in memory: \(e)")
+        }
+        let target = rec.journal.map { " -> \(Self.shortPath($0.url))" } ?? ""
+        logEvent("Recording started: \(rec.name)\(autoStop != nil ? " (auto-stop armed)" : "")\(target)")
     }
 
     /// Ends the recording. Unless `discard` is set, the finished session is
-    /// handed to `onRecordingStopped` (which saves it) and returned.
-    /// `reason` is an `AutoStopRule.Reason` raw value when a rule fired.
+    /// handed to `onRecordingStopped` (which saves it) and returned; with
+    /// `discard` the session folder is deleted. `reason` is an
+    /// `AutoStopRule.Reason` raw value when a rule fired.
     @discardableResult
     func stopRecording(discard: Bool = false, reason: String? = nil) -> Session? {
         guard let rec = recording else { return nil }
         recording = nil
-        rec.journal?.close()
         recordingEventCount += 1
         if discard {
-            logEvent("Recording discarded (\(rec.stats.samples) samples)")
+            rec.discard()
+            logEvent("Recording discarded (\(rec.sampleCount) samples)")
             return nil
         }
         var session = rec.finish()
@@ -247,6 +293,15 @@ final class MeterManager: NSObject {
         logEvent("Marker: \(label)")
     }
 
+    /// The device name stored with a new recording.
+    private var recordingDeviceName: String? {
+        switch state {
+        case .connected(let n), .connecting(let n), .reconnecting(let n, _), .unreachable(let n): return n
+        case .demo: return ConnectionState.demo.label
+        default: return nil
+        }
+    }
+
     // MARK: - Pipeline
 
     func addObserver(_ observer: any SampleObserver) {
@@ -256,7 +311,7 @@ final class MeterManager: NSObject {
 
     /// Routes a source's readings into `ingest`, replacing any previous source.
     func attach(source: any MeterSource) {
-        self.source?.stop()
+        detachSource()
         self.source = source
         source.onReading = { [weak self] r in self?.ingest(r) }
         source.start()
@@ -265,13 +320,14 @@ final class MeterManager: NSObject {
     /// Feeds one reading through the pipeline. Internal so tests can drive it.
     func ingest(_ r: Reading) {
         latest = r
+        lastIngest = Date()
         if let snapshot = pipeline.ingest(r, recording: recording, observers: observers, connection: state) {
             chart = snapshot
         }
         if pipeline.displayGeneration != lastDisplayGeneration {
             lastDisplayGeneration = pipeline.displayGeneration
             display = pipeline.display
-            trips = pipeline.trips
+            if pipeline.trips != trips { trips = pipeline.trips }
             if Date().timeIntervalSince(lastTripPersist) >= Self.tripPersistInterval { persistTrips() }
         }
         if pipeline.extremes != extremes { extremes = pipeline.extremes }
@@ -293,6 +349,7 @@ final class MeterManager: NSObject {
     func resetExtremes() {
         pipeline.extremes.reset()
         extremes = pipeline.extremes
+        persistTrips()
     }
 
     func clearHistory() {
@@ -300,10 +357,14 @@ final class MeterManager: NSObject {
         chart = .empty
     }
 
-    /// Writes the trip meter to UserDefaults (also called on backgrounding).
+    /// Writes the trip meter and the extremes to UserDefaults (every 10 s
+    /// while samples arrive, on reset, on stop and on backgrounding).
     func persistTrips() {
         if let trip = pipeline.trips.first, let data = try? JSONEncoder().encode(trip) {
             defaults.set(data, forKey: Self.tripKey)
+        }
+        if let data = try? JSONEncoder().encode(pipeline.extremes) {
+            defaults.set(data, forKey: Self.extremesKey)
         }
         lastTripPersist = Date()
     }
@@ -314,6 +375,7 @@ final class MeterManager: NSObject {
         log.removeAll()
         framesReceived = 0
         framesParsed = 0
+        framesRejected = 0
         lastFrameHex = ""
     }
 
@@ -324,11 +386,15 @@ final class MeterManager: NSObject {
         var out = "WattBench diagnostics\n"
         out += "State: \(state.label)\n"
         if let e = lastError { out += "Last error: \(e)\n" }
-        out += "Frames received: \(framesReceived), parsed: \(framesParsed)\n"
+        out += "RSSI: \(rssi.map { "\($0) dBm" } ?? "-")\n"
+        out += "Frames received: \(framesReceived), parsed: \(framesParsed), rejected: \(framesRejected)\n"
         out += "Events: connections \(connectionEventCount), recordings \(recordingEventCount), errors \(errorEventCount)\n"
+        out += "Sessions: \(sessionsDirectory.map(Self.shortPath) ?? "in memory")\n"
         if let rec = recording {
-            out += "Recording: \(rec.name) (\(rec.stats.samples) samples, \(rec.markers.count) markers)\n"
-            if let j = rec.journal { out += "Journal: \(j.url.lastPathComponent), \(j.bytesWritten) bytes, last flush \(f.string(from: j.lastFlush))\n" }
+            out += "Recording: \(rec.name) (\(rec.stats.samples) samples, \(rec.markers.count) markers, "
+            out += "\(rec.stats.gapCount) gaps)\n"
+            if let j = rec.journal { out += "Journal: \(Self.shortPath(j.url))\n" }
+            if let d = rec.journalDescription { out += "  \(d)\n" }
         }
         out += "Last frame: \(lastFrameHex)\n"
         out += "GATT:\n" + discoveredGATT.map { "  " + $0 }.joined(separator: "\n") + "\n"
@@ -338,27 +404,133 @@ final class MeterManager: NSObject {
 
     // MARK: - Demo source (also lets App Review see the UI without a meter)
 
-    /// Foreground only: the timer does not fire while the app is suspended.
+    /// Foreground only: the demo timer does not fire while the app is
+    /// suspended, so a demo recording pauses in the background (and the
+    /// pause shows up as a gap).
     func startDemo() {
         disconnect()
         state = .demo
-        logEvent("Demo data started (foreground only)")
-        demoTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.demoTick() }
-        }
-    }
-
-    private func demoTick() {
-        demoPhase += 0.1
-        let v = 9.0 + 0.05 * sin(demoPhase * 0.7)
-        let i = max(0, 1.2 + 0.8 * sin(demoPhase * 0.25) + 0.05 * sin(demoPhase * 5))
-        ingest(Reading(timestamp: Date(), voltage: v, current: i, power: v * i, monotonic: MonotonicClock.now))
+        logEvent("Demo data started (foreground only; simulated readings pause while the app is suspended)")
+        attach(source: DemoSource())
     }
 
     private func stopDemo() {
-        demoTimer?.invalidate()
-        demoTimer = nil
+        if source is DemoSource { detachSource() }
         if state == .demo { state = .idle }
+    }
+
+    private func detachSource() {
+        source?.stop()
+        source = nil
+    }
+
+    // MARK: - Scene presence and timers
+
+    private func sceneDidChange(from old: ScenePresence) {
+        switch scene {
+        case .background:
+            // Make the recording durable before the process can be suspended.
+            recording?.checkpoint(synchronize: true)
+            persistTrips()
+            logEvent("Entered background\(recording != nil ? " (recording continues over Bluetooth)" : "")")
+        case .active:
+            if old == .background { logEvent("Became active") }
+        case .inactive:
+            break
+        }
+        updateTimers()
+    }
+
+    private func updateTimers() {
+        let active = scene == .active
+        if active, state.isConnected {
+            startChartTimer()
+        } else {
+            stopChartTimer()
+        }
+        if active, case .connected = state {
+            startRSSITimer()
+        } else {
+            stopRSSITimer()
+        }
+        if active, case .reconnecting = state {
+            startReconnectTimer()
+            reconnectTick()   // catch up after a long spell in the background
+        } else {
+            stopReconnectTimer()
+        }
+    }
+
+    private func startChartTimer() {
+        guard chartTimer == nil else { return }
+        chartTimer = Timer.scheduledTimer(withTimeInterval: SamplePipeline.chartInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.chartTick() }
+        }
+    }
+
+    private func stopChartTimer() {
+        chartTimer?.invalidate()
+        chartTimer = nil
+    }
+
+    /// Republishes the chart while the stream is stalled so the trailing gap
+    /// band and the stale state keep moving; a healthy stream publishes from
+    /// `ingest` and the timer stays quiet.
+    private func chartTick() {
+        let now = Date()
+        guard now.timeIntervalSince(lastIngest) >= SamplePipeline.chartInterval, !pipeline.history.isEmpty else { return }
+        chart = pipeline.refreshChart(at: now)
+    }
+
+    private func startRSSITimer() {
+        guard rssiTimer == nil else { return }
+        rssiTick()
+        rssiTimer = Timer.scheduledTimer(withTimeInterval: Self.rssiInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.rssiTick() }
+        }
+    }
+
+    private func stopRSSITimer() {
+        rssiTimer?.invalidate()
+        rssiTimer = nil
+    }
+
+    private func rssiTick() {
+        guard case .connected = state, let p = peripheral, p.state == .connected else { return }
+        p.readRSSI()
+    }
+
+    private func startReconnectTimer() {
+        guard reconnectTimer == nil else { return }
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reconnectTick() }
+        }
+    }
+
+    private func stopReconnectTimer() {
+        reconnectTimer?.invalidate()
+        reconnectTimer = nil
+    }
+
+    private func reconnectTick() {
+        guard case .reconnecting(let name, let since) = state else {
+            stopReconnectTimer()
+            return
+        }
+        guard Date().timeIntervalSince(since) >= ReconnectPolicy.giveUpAfter else { return }
+        stopReconnectTimer()
+        state = .unreachable(name)
+        lastError = "Meter appears to be off or out of range"
+        errorEventCount += 1
+        logEvent("Gave up waiting for \(name) after \(Int(ReconnectPolicy.giveUpAfter)) s")
+        if recording == nil, let p = peripheral {
+            // Not recording: stop waiting. While recording the pending connect
+            // stays so a meter that comes back later resumes the session.
+            central.cancelPeripheralConnection(p)
+            logEvent("Cancelled pending connect (not recording)")
+        } else if recording != nil {
+            logEvent("Recording in progress; pending connect left in place")
+        }
     }
 
     // MARK: - Internals
@@ -370,6 +542,13 @@ final class MeterManager: NSObject {
         return TripMeter(label: "Trip")
     }
 
+    private static func loadExtremes(from defaults: UserDefaults) -> Extremes {
+        if let data = defaults.data(forKey: extremesKey), let e = try? JSONDecoder().decode(Extremes.self, from: data) {
+            return e
+        }
+        return Extremes(since: Date())
+    }
+
     private func lastPeripheral() -> CBPeripheral? {
         guard let s = defaults.string(forKey: Self.lastDeviceKey), let id = UUID(uuidString: s) else { return nil }
         return central.retrievePeripherals(withIdentifiers: [id]).first
@@ -378,7 +557,13 @@ final class MeterManager: NSObject {
     private func connect(peripheral p: CBPeripheral, name: String) {
         stopScan()
         stopDemo()
+        detachSource()
         stopReconnectTimer()
+        pendingRestore = nil
+        if let old = peripheral, old !== p {
+            // Connecting from the sheet cancels any other pending connect.
+            central.cancelPeripheralConnection(old)
+        }
         peripheral = p
         p.delegate = self
         wantsAutoReconnect = true
@@ -398,6 +583,7 @@ final class MeterManager: NSObject {
     private func cleanupConnection() {
         peripheral?.delegate = nil
         peripheral = nil
+        rssi = nil
         clearCharacteristics()
     }
 
@@ -432,39 +618,48 @@ final class MeterManager: NSObject {
         state = central.state == .poweredOn ? .idle : state
     }
 
-    // MARK: Reconnect display timer
+    // MARK: State restoration
 
-    private func startReconnectTimer() {
-        stopReconnectTimer()
-        reconnectTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.reconnectTick() }
+    /// Applies a plan recorded by `willRestoreState` once the central is
+    /// powered on (Bluetooth calls before that are refused).
+    private func applyRestore(_ plan: RestorePlan) {
+        guard let p = peripheral else { return }
+        switch plan {
+        case .resumeStreaming:
+            logEvent("Restore: link and services survived; resuming stream")
+            didStartStreaming = false
+            startStreamingIfReady(p)
+            if !didStartStreaming { p.discoverServices(nil) }
+        case .rediscoverServices:
+            logEvent("Restore: link survived; rediscovering services")
+            p.discoverServices(nil)
+        case .reconnect:
+            logEvent("Restore: link is down; connect left pending")
+            if case .reconnecting = state {} else {
+                state = .reconnecting(name: p.name ?? "FNB58", since: Date())
+            }
+            central.connect(p, options: nil)
+        case .nothing:
+            break
         }
     }
 
-    private func stopReconnectTimer() {
-        reconnectTimer?.invalidate()
-        reconnectTimer = nil
-    }
-
-    private func reconnectTick() {
-        guard case .reconnecting(let name, let since) = state else {
-            stopReconnectTimer()
-            return
+    /// The meter's write and notify characteristics if the peripheral's GATT
+    /// table (restored or discovered) already holds them.
+    private static func fnb58Characteristics(of p: CBPeripheral) -> (write: CBCharacteristic, notify: CBCharacteristic)? {
+        var write: CBCharacteristic?
+        var notify: CBCharacteristic?
+        for s in p.services ?? [] {
+            for c in s.characteristics ?? [] {
+                if c.uuid == FNB58Protocol.writeUUID {
+                    write = c
+                } else if c.uuid == FNB58Protocol.notifyUUID {
+                    notify = c
+                }
+            }
         }
-        guard Date().timeIntervalSince(since) >= ReconnectPolicy.giveUpAfter else { return }
-        stopReconnectTimer()
-        state = .unreachable(name)
-        lastError = "Meter appears to be off or out of range"
-        errorEventCount += 1
-        logEvent("Gave up waiting for \(name) after \(Int(ReconnectPolicy.giveUpAfter)) s")
-        if recording == nil, let p = peripheral {
-            // Not recording: stop waiting. While recording the pending connect
-            // stays so a meter that comes back later resumes the session.
-            central.cancelPeripheralConnection(p)
-            logEvent("Cancelled pending connect (not recording)")
-        } else if recording != nil {
-            logEvent("Recording in progress; pending connect left in place")
-        }
+        guard let write, let notify else { return nil }
+        return (write, notify)
     }
 
     private func logEvent(_ message: String) {
@@ -472,6 +667,11 @@ final class MeterManager: NSObject {
         if log.count > Self.logLimit {
             log.removeFirst(log.count - Self.logLimit)
         }
+    }
+
+    /// `sessions/<uuid>/samples.wbj` rather than the full container path.
+    private static func shortPath(_ url: URL) -> String {
+        url.pathComponents.suffix(3).joined(separator: "/")
     }
 
     private func hex(_ data: Data, limit: Int = 64) -> String {
@@ -499,7 +699,10 @@ extension MeterManager: @preconcurrency CBCentralManagerDelegate {
         switch central.state {
         case .poweredOn:
             if state == .bluetoothOff || state == .unauthorized { state = .idle }
-            if wantsAutoReconnect {
+            if let plan = pendingRestore {
+                pendingRestore = nil
+                applyRestore(plan)
+            } else if wantsAutoReconnect {
                 reconnectLastDevice()
             } else if autoConnectOnLaunch, !didAutoConnect, state == .idle, hasLastDevice {
                 didAutoConnect = true
@@ -510,10 +713,48 @@ extension MeterManager: @preconcurrency CBCentralManagerDelegate {
             state = .unauthorized
         case .poweredOff, .resetting, .unsupported, .unknown:
             stopReconnectTimer()
+            rssi = nil
             if state != .demo { state = .bluetoothOff }
         @unknown default:
             break
         }
+    }
+
+    /// The system relaunched the app for a Bluetooth event (a meter that
+    /// reappeared or kept streaming while the app was killed in the
+    /// background). Re-adopts the peripheral; Bluetooth calls wait for
+    /// `.poweredOn`. Nothing here starts a recording.
+    func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any]) {
+        let restored = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral] ?? []
+        let snapshots = restored.map { p in
+            RestorePlan.PeripheralSnapshot(id: p.identifier, name: p.name, isConnected: p.state == .connected,
+                                           hasCharacteristics: Self.fnb58Characteristics(of: p) != nil)
+        }
+        let plan = RestorePlan.make(snapshots)
+        logEvent("Restored by the system with \(restored.count) peripheral(s): \(plan.description)")
+        guard let id = plan.peripheralID, let p = restored.first(where: { $0.identifier == id }) else { return }
+        peripheral = p
+        p.delegate = self
+        wantsAutoReconnect = true
+        discoveredGATT.removeAll()
+        clearCharacteristics()
+        let name = p.name ?? "FNB58"
+        switch plan {
+        case .resumeStreaming:
+            if let found = Self.fnb58Characteristics(of: p) {
+                writeCharacteristic = found.write
+                notifyCharacteristic = found.notify
+            }
+            state = .connecting(name)
+        case .rediscoverServices:
+            state = .connecting(name)
+        case .reconnect:
+            state = .reconnecting(name: name, since: Date())
+        case .nothing:
+            break
+        }
+        pendingRestore = plan
+        logEvent("Restore: delegate reattached to \(name)")
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
@@ -545,7 +786,7 @@ extension MeterManager: @preconcurrency CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        if case .reconnecting = state, wantsAutoReconnect, reconnectTimer != nil {
+        if case .reconnecting = state, wantsAutoReconnect {
             // Keep the reconnect pending; the display timer still gives up at 120 s.
             logEvent("Reconnect attempt failed (\(error?.localizedDescription ?? "unknown")); connect re-issued")
             central.connect(peripheral, options: nil)
@@ -557,6 +798,7 @@ extension MeterManager: @preconcurrency CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         let name = peripheral.name ?? "FNB58"
         logEvent("Disconnected from \(name)\(error.map { ": \($0.localizedDescription)" } ?? "")")
+        rssi = nil
         if case .unreachable = state {
             // Our own cancellation of the pending connect after giving up.
             clearCharacteristics()
@@ -568,16 +810,22 @@ extension MeterManager: @preconcurrency CBCentralManagerDelegate {
             return
         }
         // Unexpected drop (meter powered off, out of range): keep the
-        // peripheral and leave a connect pending with CoreBluetooth.
+        // peripheral and leave a connect pending with CoreBluetooth. A
+        // recording in progress is made durable now and continues when the
+        // meter is back; the pause is recorded as a gap marker with the
+        // measured interval by the first sample after the reconnect.
         clearCharacteristics()
         lastError = error?.localizedDescription
         self.peripheral = peripheral
         peripheral.delegate = self
+        if let rec = recording {
+            rec.checkpoint(synchronize: true)
+            logEvent("Recording continues; \(rec.sampleCount) samples secured")
+        }
         if case .reconnecting = state {
             // already counting
         } else {
             state = .reconnecting(name: name, since: Date())
-            startReconnectTimer()
         }
         central.connect(peripheral, options: nil)
     }
@@ -626,6 +874,11 @@ extension MeterManager: @preconcurrency CBPeripheralDelegate {
         if let error { logEvent("Write to \(characteristic.uuid) failed: \(error.localizedDescription)") }
     }
 
+    func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: Error?) {
+        guard error == nil else { return }
+        rssi = RSSI.intValue
+    }
+
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error {
             logEvent("Value update error on \(characteristic.uuid): \(error.localizedDescription)")
@@ -638,6 +891,7 @@ extension MeterManager: @preconcurrency CBPeripheralDelegate {
             logEvent("Frame #\(framesReceived) (\(data.count) B): \(lastFrameHex)")
         }
         guard let reading = FNB58Protocol.parse(data, at: Date(), monotonic: MonotonicClock.now) else {
+            framesRejected += 1
             if framesReceived <= 5 { logEvent("Frame #\(framesReceived) rejected by parser") }
             return
         }
