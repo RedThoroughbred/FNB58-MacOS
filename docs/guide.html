@@ -1,0 +1,167 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattBench user guide</title>
+<meta name="description" content="How to use WattBench, the iPhone companion for the FNIRSI FNB58 USB power meter: connecting, live readings, recording, sessions, export, alerts and settings.">
+<link rel="icon" href="assets/icon.png"><link rel="stylesheet" href="styles.css"></head><body><div class="wrap">
+<header class="top"><a class="brand" href="./"><img src="assets/icon.png" alt="">WattBench</a><nav><a href="./">Home</a><a href="guide.html">User guide</a><a href="privacy.html">Privacy</a><a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">Support</a><a href="https://github.com/RedThoroughbred/FNB58-MacOS">GitHub</a></nav></header>
+
+<section class="guide" style="border-top:0">
+<h2>WattBench user guide</h2>
+<p class="meta">For WattBench 1.1 on iPhone (iOS 17 or later). Labels below are quoted exactly as they appear in the app.</p>
+<div class="toc">
+<a href="#start">Before you start</a><a href="#connect">Connecting</a><a href="#live">Live tab</a><a href="#record">Recording</a><a href="#sessions">Sessions</a><a href="#export">Export</a><a href="#alerts">Alerts</a><a href="#settings">Settings</a><a href="#extras">Quick actions &amp; diagnostics</a><a href="#trouble">Troubleshooting</a>
+</div>
+
+<h2 id="start">Before you start</h2>
+<ul>
+<li><strong>What you need:</strong> an iPhone running iOS 17 or later and a FNIRSI FNB58 USB power meter. Only the FNB58 is supported; its Bluetooth protocol carries voltage, current and power. D+/D− line voltages and temperature are shown on the meter itself and are not available over Bluetooth.</li>
+<li><strong>On the meter:</strong> open its settings menu and turn Bluetooth on. Keep it within a few metres of the phone.</li>
+<li><strong>No meter yet?</strong> Tap <strong>Try Demo Data</strong> on the Live tab (or in Settings → Advanced) to explore every screen with simulated readings. Demo readings are marked "Demo" everywhere and are excluded from the trip counter by default.</li>
+</ul>
+
+<h2 id="connect">Connecting</h2>
+<div class="fig"><img src="assets/01-live.png" alt="Live tab"><div>
+<ol class="steps">
+<li>Tap <strong>Connect</strong> on the Live tab, or tap the status pill in the top-left corner. The Connect sheet opens and starts scanning. iOS asks for Bluetooth permission the first time.</li>
+<li>Meters named FNB58 appear under <strong>Nearby</strong> with a signal-strength glyph and their RSSI in dBm, strongest first. Tap one to connect.</li>
+<li>If exactly one FNB58 is found, WattBench connects to it by itself after a moment ("Found only this meter") and closes the sheet. Tap <strong>Cancel</strong> if you wanted a different one.</li>
+</ol>
+<p>WattBench remembers the last meter. With <strong>Auto-connect on launch</strong> on (the default), it connects to that meter every time you open the app, and the title menu offers <strong>Reconnect to Last Meter</strong>.</p>
+</div></div>
+<h3>The status pill</h3>
+<ul>
+<li><strong>Not connected</strong>, <strong>Scanning</strong>, <strong>Connecting</strong> — before a link is up. Tap the pill at any time to open the Connect sheet.</li>
+<li><strong>FNB58</strong> (green) — connected and receiving readings. <strong>No data</strong> replaces it when nothing has arrived for two seconds.</li>
+<li><strong>Reconnecting</strong> (orange, with a timer) — the meter dropped out. WattBench reconnects as soon as it is back in range or powered on, even with the phone locked. Readings, trip and chart stay on screen.</li>
+<li><strong>Unreachable</strong> (red) — two minutes have passed without the meter. A <strong>Retry</strong> button appears. If a recording is running, the reconnect is kept pending so a returning meter resumes the same recording with a gap.</li>
+<li><strong>Bluetooth off</strong> / <strong>No access</strong> — fix it from the Connect sheet's <strong>Open Settings</strong> button.</li>
+<li><strong>Demo</strong> (purple) — simulated readings.</li>
+</ul>
+<h3>Connect sheet extras</h3>
+<ul>
+<li><strong>Scan</strong> / <strong>Stop</strong> in the toolbar; <strong>Scan Again</strong> after nothing is found for eight seconds.</li>
+<li><strong>Advanced</strong> → <strong>Show all Bluetooth devices</strong> lists every advertising device (with a "Device name" search field) instead of only names containing FNB58.</li>
+<li><strong>Forget meter</strong> stops auto-connect on launch. You can pick the meter again from the list later.</li>
+<li>The title menu on the Live tab (tap the "WattBench" title) also has <strong>Connect…</strong>, <strong>Disconnect</strong> and <strong>Try Demo Data</strong>.</li>
+</ul>
+
+<h2 id="live">The Live tab</h2>
+<h3>Readouts</h3>
+<ul>
+<li>The large readout shows one metric (Power by default). The two tiles below show the others. <strong>Tap a tile</strong> to make it the large readout.</li>
+<li>Voltage shows its range since you connected (for example "9.01–9.05 V"); current and power show their peak and the time it happened ("PEAK 27.4 W · 14:02:11"). Peaks persist until you reset them.</li>
+<li><strong>Long-press</strong> any readout for <strong>Reset Peaks</strong> and <strong>Copy Value</strong>.</li>
+<li>Units auto-range: current and power switch to mA/mW below about 1 A/1 W and back above it; energy shows mWh below 1 Wh. Turn this off in Settings → <strong>Auto-range units</strong>.</li>
+</ul>
+<h3>Trip counter</h3>
+<ul>
+<li>The <strong>TRIP</strong> card accumulates energy (Wh) and capacity (mAh) plus active time, peak and average power since it was last reset, across reconnects and app launches. No recording needed.</li>
+<li><strong>Reset</strong> clears it (you are asked to confirm above 0.01 Wh). Long-press for <strong>Reset Trip</strong> and <strong>Copy Values</strong>.</li>
+<li>A pause glyph shows when no data has arrived for five seconds. Gaps longer than five seconds are not counted. Demo readings are not counted while <strong>Exclude demo readings from trip</strong> is on.</li>
+</ul>
+<h3>Chart</h3>
+<ul>
+<li>Pick <strong>V</strong>, <strong>A</strong>, <strong>W</strong> or <strong>All</strong> and a window of <strong>10 s</strong>, <strong>30 s</strong>, <strong>60 s</strong> or <strong>2 min</strong>. The window you pick here is remembered.</li>
+<li><strong>Touch and hold</strong> the plot to read the exact value and time under your finger. Drag to scroll back through the last two minutes; the <strong>Live</strong> button returns to now.</li>
+<li>Gray bands mark dropouts (samples more than five seconds apart). A dashed line marks the peak; markers from the current recording appear as labelled lines.</li>
+<li>The <strong>…</strong> menu has <strong>Show Peak Line</strong>, <strong>Copy Value Under Cursor</strong> and <strong>Clear Chart</strong> (clears only the live history).</li>
+</ul>
+
+<h2 id="record">Recording</h2>
+<div class="fig"><img src="assets/02-recording.png" alt="Recording in progress"><div>
+<h3>Start</h3>
+<ol class="steps">
+<li>Tap <strong>Record</strong> in the bar at the bottom (enabled once a meter or demo is connected).</li>
+<li>The <strong>Recording</strong> sheet suggests a name ("FNB58 · Sep 26 at 8:24 AM"); change it if you like, add tag chips (<strong>Charger</strong>, <strong>Cable</strong>, <strong>Power bank</strong>, <strong>Device</strong> or your recent tags) and a <strong>Note</strong>.</li>
+<li>Optionally set a rule under <strong>Stop automatically</strong>, then tap <strong>Start Recording</strong>. The rule you used becomes the default for next time.</li>
+</ol>
+<h3>Auto-stop rules</h3>
+<ul>
+<li><strong>When current stays below</strong> a threshold (default 100 mA) <strong>For</strong> 30 s, 1 min, 2 min or 5 min. Only time with live readings counts, so a reconnect gap never triggers it. The timer resets once current rises 2% above the threshold.</li>
+<li><strong>After duration</strong>: 30 min, 1 h, 2 h, 4 h or 8 h of active recording time (gaps excluded).</li>
+<li><strong>At energy</strong>: a target in Wh.</li>
+<li>Rules work with the screen locked. When one fires, the session is saved and a marker such as "Auto-stop: current below threshold" is added. Allow notifications (see <a href="#alerts">Alerts</a>) to be told when it stops.</li>
+</ul>
+</div></div>
+<h3>While recording</h3>
+<ul>
+<li>The bar shows a pulsing red dot, the elapsed time, and the energy and capacity captured so far. The Sessions tab shows a small red chip that jumps back to Live.</li>
+<li><strong>Markers:</strong> tap the bookmark button to add "Mark 1", "Mark 2", …; hold it for <strong>Plugged in</strong>, <strong>Unplugged</strong>, <strong>Cable swapped</strong>, <strong>Load changed</strong> or <strong>Custom…</strong>. Markers appear on the live chart and in the session report, and energy is integrated between consecutive markers.</li>
+<li>Lock the phone or switch apps freely: with a real meter the recording continues in the background. Demo recordings run only while the app is open.</li>
+<li>Every sample is written to disk as it arrives (flushed at least once a second and forced to disk every ten seconds), so a crash loses about a second at most.</li>
+<li>The <strong>…</strong> menu shows the armed auto-stop rule and offers <strong>Discard Recording…</strong>.</li>
+</ul>
+<h3>Stop</h3>
+<ul>
+<li>Tap the round <strong>Stop</strong> button. The session is saved immediately and a toast shows "Saved · &lt;energy&gt;" with <strong>Undo</strong> for five seconds (Undo deletes the session).</li>
+<li>If no samples arrived at all, WattBench asks whether to discard or keep recording.</li>
+<li>Bluetooth dropouts are recorded as "Gap 12 s" markers and shown as gaps in the chart; they are not counted in energy, capacity or active time.</li>
+</ul>
+<h3>If WattBench closes mid-recording</h3>
+<p>On the next launch a <strong>Recording was interrupted</strong> sheet shows the energy, capacity, duration and sample count written so far. Choose <strong>Keep Recording</strong> to save it as a recovered session (marked with an orange triangle) or <strong>Discard</strong>. The Sessions list also offers <strong>Keep</strong> / <strong>Discard</strong> for it.</p>
+
+<h2 id="sessions">Sessions</h2>
+<div class="fig"><img src="assets/03-sessions.png" alt="Sessions list"><img src="assets/04-session-detail.png" alt="Session report"><div>
+<h3>The list</h3>
+<ul>
+<li>Sessions are grouped by day. Each row shows the name, start time, active duration, energy, tags and a small power sparkline; demo sessions carry a purple <strong>DEMO</strong> badge.</li>
+<li><strong>Search</strong> by name, device, tag or note. <strong>Sort</strong> by Newest, Longest or Most energy.</li>
+<li>Swipe right to <strong>Rename</strong>; swipe left to <strong>Share</strong> or <strong>Delete</strong>. Long-press for a preview with <strong>Share CSV</strong>, <strong>Copy Summary</strong>, <strong>Rename</strong> and <strong>Delete</strong>. <strong>Edit</strong> selects several sessions to share or delete together.</li>
+</ul>
+<h3>The report</h3>
+<ul>
+<li>Tap the title to rename it. Use the tags row to add or edit tags, and <strong>Add a note</strong> under Notes.</li>
+<li>Tiles: <strong>ENERGY</strong>, <strong>CAPACITY</strong> and <strong>DURATION</strong> (active time and wall-clock time). <strong>Highlights</strong> lists time-weighted average power, peak power, the voltage and current ranges and, if any, gaps not integrated.</li>
+<li><strong>Chart:</strong> V, A or W at full resolution with a shaded min/max envelope when zoomed out. Pinch to zoom (down to 10 seconds), drag to scroll, touch and hold to read a value. Presets: <strong>All</strong>, <strong>1 h</strong>, <strong>10 min</strong>, <strong>1 min</strong>.</li>
+<li><strong>Range:</strong> tap <strong>Range</strong>, then drag across the chart. A card shows the selection's duration, energy (and its share of the session), capacity, average V/A/W, voltage and current ranges and peak power. <strong>Save as Marker Pair</strong> keeps the selection as "Range start" / "Range end" markers.</li>
+<li><strong>Markers:</strong> every marker with its time, the energy to the next marker and the readings at that moment. Tap one to jump the chart there; swipe to delete markers you added.</li>
+<li><strong>Integrity:</strong> sample count and rate, gaps, recording times, meter name, auto-stop reason, and whether the session was recovered.</li>
+</ul>
+</div></div>
+
+<h2 id="export">Export</h2>
+<ul>
+<li>Tap <strong>Share</strong> in a session (or swipe a row) to export a <strong>CSV</strong> through the iOS share sheet: AirDrop it to a Mac, save it to Files, or send it to any app. <strong>Copy Summary</strong> puts a one-line summary ("name · energy · duration · peak") on the clipboard.</li>
+<li>CSV columns: <code>timestamp</code> (UTC, ISO 8601 with milliseconds), <code>voltage_v</code>, <code>current_a</code>, <code>power_w</code>, <code>elapsed_s</code>, <code>marker_label</code>. It opens directly in Numbers, Excel, or pandas.</li>
+<li>Recordings live in WattBench's own Documents folder, which you can browse in the Files app (On My iPhone → WattBench). The files there are binary; CSV is the readable format.</li>
+</ul>
+
+<h2 id="alerts">Alerts</h2>
+<ul>
+<li>Open Settings → <strong>Alert rules</strong>. Add a preset (<strong>USB-C 65 W</strong>, <strong>5 V device</strong>, <strong>Power bank drain</strong>) or your own rule with a condition: <strong>Over-voltage</strong>, <strong>Under-voltage</strong>, <strong>Over-current</strong>, <strong>Over-power</strong>, <strong>Current below</strong> (for a duration), <strong>Voltage drop</strong> (within one second) or <strong>Disconnected</strong> (for a duration, only while recording).</li>
+<li>Rules are checked on every reading, recording or not. Each fires at most once a minute and re-arms once the value is back 2% inside its bound.</li>
+<li>While WattBench is open, an alert shows as a red banner with a haptic. In the background it arrives as a notification (turn on <strong>Notify in the background</strong> for the rule); during a recording the notification offers <strong>Stop &amp; save</strong>. A fired alert also adds a marker to the running recording.</li>
+<li>WattBench asks for notification permission the first time you enable a rule, never before. <strong>Send test notification</strong> checks that it works.</li>
+</ul>
+
+<h2 id="settings">Settings</h2>
+<p>Open Settings with the gear on the Live tab.</p>
+<ul>
+<li><strong>Display:</strong> Hero metric (Voltage / Current / Power); Auto-range units; Precision (3 or 4 digits); Capacity (mAh / Auto); Haptic feedback; Keep screen awake while connected (ignored in Low Power Mode).</li>
+<li><strong>Charts:</strong> Default window (10 sec / 30 sec / 1 min / 2 min); Show peak line.</li>
+<li><strong>Recording:</strong> the remembered Default auto-stop rule (with <strong>Clear default auto-stop</strong>); Exclude demo readings from trip.</li>
+<li><strong>Alerts:</strong> Alert rules.</li>
+<li><strong>Meter:</strong> Last meter; Auto-connect on launch; Show all Bluetooth devices; Forget meter. Bluetooth stays active in the background only while WattBench is connected to a meter, so a recording continues with the screen locked. Disconnect when you are done to save battery. WattBench never scans for meters in the background.</li>
+<li><strong>Storage:</strong> session count and space used; <strong>Delete All Sessions</strong> (export anything you want to keep first).</li>
+<li><strong>Advanced:</strong> Diagnostics; Try demo data / Stop demo data.</li>
+<li><strong>About:</strong> version, privacy policy, support and source code links.</li>
+</ul>
+
+<h2 id="extras">Quick actions and diagnostics</h2>
+<ul>
+<li><strong>Home Screen quick actions:</strong> press and hold the WattBench icon for <strong>Start Recording</strong> (opens the recording sheet once a meter is connected) and <strong>Connect to Last Meter</strong>.</li>
+<li><strong>Diagnostics</strong> (Settings → Advanced) shows the connection state, frame counters, the recording journal, state restoration, the meter's Bluetooth services and a log. <strong>Copy</strong> or <strong>Share</strong> it when reporting a problem.</li>
+</ul>
+
+<h2 id="trouble">Troubleshooting</h2>
+<div class="faq">
+<details><summary>"No Meter Found"</summary><p>Make sure Bluetooth is enabled in the meter's own settings menu and the meter is within a few metres. Only devices named FNB58 are listed unless <strong>Show all Bluetooth devices</strong> is on. If the meter is connected to another phone or a computer, disconnect it there first.</p></details>
+<details><summary>The app sits on "Connecting to FNB58"</summary><p>Auto-connect waits for the remembered meter, which is probably switched off. Turn it on, or open Settings → <strong>Forget meter</strong> and connect from the list instead.</p></details>
+<details><summary>"No data" while connected</summary><p>The meter is connected but not sending. Check that the meter is on its measurement screen and something is plugged into it; open Diagnostics to see whether frames are arriving.</p></details>
+<details><summary>Readings stop when I lock the phone</summary><p>They shouldn't with a real meter: WattBench keeps the connection alive in the background. Demo readings do pause in the background. If iOS relaunched the app in the background, it re-adopts the meter but does not resume a recording.</p></details>
+<details><summary>An alert never arrives in the background</summary><p>Check Settings → Alert rules → Notifications shows "Allowed", and that the rule's <strong>Notify in the background</strong> is on. Notifications are only sent while WattBench is not in front.</p></details>
+<details><summary>Something else</summary><p>Copy the Diagnostics text and <a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">open an issue</a> on GitHub.</p></details>
+</div>
+</section>
+<footer><p><a href="./">Home</a> · <a href="https://apps.apple.com/us/app/id6816404264">App Store</a> · <a href="privacy.html">Privacy policy</a> · <a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">Support</a></p>
+<p>WattBench is an independent project and is not affiliated with or endorsed by FNIRSI.</p><p>© 2026 Seth Egger</p></footer>
+</div></body></html>

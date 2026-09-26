@@ -1,4 +1,49 @@
-# FNIRSI FNB58 Web Monitor
+# FNIRSI FNB58 Web Monitor · WattBench for iPhone
+
+<p align="center">
+  <a href="https://apps.apple.com/us/app/id6816404264"><img src="docs/assets/icon.png" width="128" alt="WattBench app icon"></a>
+</p>
+<h2 align="center">WattBench — live power meter for the FNB58, on your iPhone</h2>
+<p align="center">
+  <a href="https://apps.apple.com/us/app/id6816404264"><img src="docs/assets/badge-black.svg" height="50" alt="Download on the App Store"></a>
+</p>
+<p align="center">
+  <a href="https://redthoroughbred.github.io/FNB58-MacOS/">Website</a> ·
+  <a href="https://redthoroughbred.github.io/FNB58-MacOS/guide.html">User guide</a> ·
+  <a href="PRIVACY.md">Privacy policy</a> ·
+  <a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">Support</a>
+</p>
+
+WattBench turns your iPhone into a wireless display and data logger for the FNIRSI FNB58 USB power
+meter. Connect over Bluetooth and watch voltage, current and power update live, record a whole
+charge cycle with the screen locked, review the curve later and export it as CSV. No account, no
+ads, no analytics, no network access — your data stays on your phone. **iPhone · iOS 17+ · $2.99.**
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/01-live.png" width="200" alt="Live view"><br><em>Live instrument face</em></td>
+    <td align="center"><img src="docs/assets/02-recording.png" width="200" alt="Recording"><br><em>Recording with Wh / mAh</em></td>
+    <td align="center"><img src="docs/assets/03-sessions.png" width="200" alt="Sessions"><br><em>Sessions</em></td>
+    <td align="center"><img src="docs/assets/04-session-detail-dark.png" width="200" alt="Session report"><br><em>Session report (dark)</em></td>
+  </tr>
+</table>
+
+- **Live readouts** with peak hold and a scrolling chart you can scrub and zoom (10 s – 2 min)
+- **Trip counter** — Wh and mAh since you plugged in, no recording needed
+- **Crash-safe background recording** — samples journaled to disk as they arrive; dropouts shown as gaps
+- **Auto-stop rules** (current below a threshold, duration, energy target) and **markers**
+- **Session reports** with min/max envelope, drag-to-select range statistics, notes and tags
+- **Threshold alerts** with presets, hysteresis and cooldown; local notifications when locked
+- **CSV / summary export** through the share sheet; **Home Screen quick actions**; reconnects by itself
+- **Demo mode** so you can explore the app before your meter arrives
+
+The source lives in [`ios/`](ios/) (SwiftUI + CoreBluetooth). Build instructions are in the
+[iPhone App](#-iphone-app-ios) section below. WattBench is an independent project and is not
+affiliated with or endorsed by FNIRSI.
+
+---
+
+## FNIRSI FNB58 Web Monitor (desktop)
 
 🚀 **A beautiful, feature-rich web application for monitoring your FNIRSI FNB58 USB Power Meter**
 
@@ -251,7 +296,9 @@ cd ios && xcodebuild test -project WattBench.xcodeproj -scheme WattBench \
 ```
 
 On the phone: turn the FNB58 on, enable Bluetooth in its settings menu, open the app, tap
-**Connect**, pick the meter. The Simulator has no Bluetooth radio — use **Use demo data** there.
+**Connect**, pick the meter. The Simulator has no Bluetooth radio — use **Try Demo Data** there.
+
+The [user guide](https://redthoroughbred.github.io/FNB58-MacOS/guide.html) covers every screen and setting; the site itself is served from [`docs/`](docs/) by GitHub Pages.
 
 ## 🧪 Tests
 
