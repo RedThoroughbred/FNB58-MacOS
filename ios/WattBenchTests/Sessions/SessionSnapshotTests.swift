@@ -154,7 +154,7 @@ final class SessionSnapshotTests: XCTestCase {
             SessionChart(model: model, placeholder: anker.sparkline)
             RangeStatsCard(range: range, stats: stats, sessionStart: session.startTime,
                            sessionEnergyWh: session.stats.energyWh, onSaveMarkers: {}, onClose: {})
-            SessionPreviewCard(summary: anker)
+            SessionPreviewCard(summary: anker, formatter: MetricFormatter())
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

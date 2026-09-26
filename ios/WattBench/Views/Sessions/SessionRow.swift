@@ -41,13 +41,16 @@ struct SessionRow: View {
     }
 }
 
-/// Larger card shown as the context-menu preview of a row.
+/// Larger card shown as the context-menu preview of a row. A context-menu
+/// preview is rendered outside the row's view hierarchy, so it takes the
+/// formatter as a value instead of reading `Preferences` from the
+/// environment (which is missing there and would trap).
 struct SessionPreviewCard: View {
-    @Environment(Preferences.self) private var prefs
     let summary: SessionSummary
+    let formatter: MetricFormatter
 
     var body: some View {
-        let f = prefs.formatter
+        let f = formatter
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {

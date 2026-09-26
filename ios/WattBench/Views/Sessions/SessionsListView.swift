@@ -134,7 +134,7 @@ struct SessionsListView: View {
                             .contextMenu {
                                 rowMenu(s)
                             } preview: {
-                                SessionPreviewCard(summary: s)
+                                SessionPreviewCard(summary: s, formatter: prefs.formatter)
                             }
                     }
                 } header: {
