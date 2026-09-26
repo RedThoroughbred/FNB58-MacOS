@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattBench — live power meter for the FNIRSI FNB58, on your iPhone</title>
+<meta name="description" content="WattBench turns your iPhone into a wireless display and data logger for the FNIRSI FNB58 USB power meter: live voltage, current and power, crash-safe background recording, session reports, alerts and CSV export.">
+<meta property="og:title" content="WattBench — live power meter for the FNIRSI FNB58"><meta property="og:description" content="Wireless display and data logger for the FNIRSI FNB58 USB power meter, on your iPhone. Live readings, crash-safe recordings, session reports, alerts, CSV export.">
+<meta property="og:image" content="https://redthoroughbred.github.io/FNB58-MacOS/assets/og-image.png"><meta property="og:url" content="https://redthoroughbred.github.io/FNB58-MacOS/"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon.png"><link rel="apple-touch-icon" href="assets/icon.png"><link rel="stylesheet" href="styles.css"></head><body><div class="wrap">
+<header class="top"><a class="brand" href="./"><img src="assets/icon.png" alt="">WattBench</a><nav><a href="#features">Features</a><a href="#start">Quick start</a><a href="guide.html">User guide</a><a href="#faq">FAQ</a><a href="privacy.html">Privacy</a><a href="https://github.com/RedThoroughbred/FNB58-MacOS">GitHub</a></nav></header>
+<div class="hero"><div>
+<img class="icon" src="assets/icon.png" alt="WattBench app icon">
+<h1>WattBench</h1><p class="tag">Live power meter for the FNIRSI FNB58, on your iPhone.</p>
+<p class="meta">iPhone · iOS 17 or later · $2.99, no subscription · Requires an FNB58 with Bluetooth</p>
+<a class="badge" href="https://apps.apple.com/us/app/id6816404264"><picture><source srcset="assets/badge-white.svg" media="(prefers-color-scheme: dark)"><img src="assets/badge-black.svg" alt="Download on the App Store"></picture></a>
+</div><div class="shots"><img src="assets/01-live.png" alt="Live view with voltage, current and power readouts and a scrolling chart"><img src="assets/04-session-detail-dark.png" alt="Session report with chart and statistics, dark mode"></div></div>
+<p>WattBench turns your iPhone into a wireless display and data logger for the FNIRSI FNB58 USB power meter. Connect over Bluetooth and watch voltage, current and power update in real time, start a recording to capture a whole charge cycle, and review or export every sample later. No account, no ads, no analytics, no network access — everything stays on your phone.</p>
+<div class="strip">
+<figure><img src="assets/01-live.png" alt=""><figcaption>Live instrument face</figcaption></figure>
+<figure><img src="assets/02-recording.png" alt=""><figcaption>Recording with energy and capacity</figcaption></figure>
+<figure><img src="assets/03-sessions.png" alt=""><figcaption>Sessions</figcaption></figure>
+<figure><img src="assets/04-session-detail.png" alt=""><figcaption>Session report</figcaption></figure>
+<figure><img src="assets/01-live-dark.png" alt=""><figcaption>Dark mode</figcaption></figure>
+<figure><img src="assets/03-sessions-dark.png" alt=""><figcaption>Sessions, dark</figcaption></figure>
+<figure><img src="assets/04-session-detail-dark.png" alt=""><figcaption>Report, dark</figcaption></figure>
+</div>
+<section id="features"><h2>Built for the bench</h2><div class="grid">
+<div class="card"><h3>Live readouts</h3><p>Big, glanceable voltage, current and power with peak hold, plus a scrolling chart you can scrub and zoom from 10 seconds to 2 minutes.</p></div>
+<div class="card"><h3>Trip counter</h3><p>Energy (Wh) and capacity (mAh) accumulate from the moment you plug in — no recording needed. Reset it whenever you like.</p></div>
+<div class="card"><h3>Recordings you can trust</h3><p>Every sample is written to disk as it arrives. Recordings keep running with the screen locked and survive a crash, a force-quit or a Bluetooth drop; dropouts show up as gaps, never hidden.</p></div>
+<div class="card"><h3>Auto-stop and markers</h3><p>Stop automatically when current falls below a threshold, after a duration or at an energy target. Drop markers (“Plugged in”, “Cable swapped”…) while you work.</p></div>
+<div class="card"><h3>Session reports</h3><p>Full-resolution charts with min/max envelope, drag to select a range and read its statistics, notes, tags and integrity information.</p></div>
+<div class="card"><h3>Alerts</h3><p>Threshold alerts with presets, hysteresis and cooldown. A banner and haptic in the foreground, a local notification when the phone is locked.</p></div>
+<div class="card"><h3>CSV export</h3><p>Share any session as CSV or a text summary — AirDrop it, save it to Files, open it in Numbers, Excel or Python.</p></div>
+<div class="card"><h3>Reconnects by itself</h3><p>Remembers your meter, reconnects when it comes back, and tells you honestly when it has been unreachable too long.</p></div>
+<div class="card"><h3>Private by design</h3><p>No account, no analytics, no network requests. Bluetooth is used only to talk to your meter. <a href="privacy.html">Privacy policy</a>.</p></div>
+</div></section>
+<section id="start"><h2>Quick start</h2><ol class="steps">
+<li>On the FNB58, open its settings menu and turn <strong>Bluetooth</strong> on.</li>
+<li>Open WattBench and tap <strong>Connect</strong>. Allow Bluetooth when iOS asks. Your meter appears within a few seconds; tap it. Next time, WattBench reconnects to it on its own.</li>
+<li>Plug the device under test into the meter. The Live tab shows voltage, current and power immediately and the trip counter starts adding up energy and capacity.</li>
+<li>Tap <strong>Record</strong> to capture a session. Name it, add tags or an auto-stop rule, then leave the phone locked — the recording continues in the background.</li>
+<li>Tap <strong>Stop</strong>. Find the session under <strong>Sessions</strong>, open its report, and share it as CSV.</li></ol>
+<p class="note">No meter yet? Tap <strong>Connect</strong>, then <strong>Try with demo data</strong> to explore every screen with simulated readings. The full <a href="guide.html">user guide</a> walks through every screen and setting.</p></section>
+<section id="faq" class="faq"><h2>FAQ</h2>
+<details><summary>Which meters work?</summary><p>The FNIRSI FNB58 over Bluetooth Low Energy. Other FNIRSI meters may share the protocol, but only the FNB58 has been verified. The desktop web monitor in the same repository also supports the FNB48, FNB48S and C1 over USB.</p></details>
+<details><summary>Why don't I see D+/D− voltages or temperature?</summary><p>The meter only sends voltage, current and power over Bluetooth. D+/D−, temperature and protocol triggering are available on the meter's own screen or over USB with the desktop monitor.</p></details>
+<details><summary>Does recording drain my battery?</summary><p>Bluetooth stays active in the background only while WattBench is connected to a meter, so a recording continues with the screen locked. Disconnect when you are done to save battery. WattBench never scans for meters in the background.</p></details>
+<details><summary>What happens if the app crashes mid-recording?</summary><p>Samples are written to disk as they arrive. On the next launch you are offered the samples recorded so far — keep them as a session or discard them.</p></details>
+<details><summary>Where are my recordings stored?</summary><p>On your phone, in WattBench's own Documents folder (visible in the Files app under On My iPhone → WattBench). Nothing is uploaded anywhere.</p></details>
+<details><summary>Is there a Mac or Linux version?</summary><p>The same repository contains a desktop web monitor (Python/Flask) that talks to the meter over USB or Bluetooth from a computer and adds D+/D− scope, protocol triggering and spectrum views. See the <a href="https://github.com/RedThoroughbred/FNB58-MacOS#readme">README</a>.</p></details>
+<details><summary>Something isn't working</summary><p>Open <strong>Settings → Diagnostics</strong> in the app to see the Bluetooth log and raw frames, then <a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">open an issue</a> with what you see.</p></details>
+</section>
+<footer><p><a href="https://apps.apple.com/us/app/id6816404264">App Store</a> · <a href="guide.html">User guide</a> · <a href="privacy.html">Privacy policy</a> · <a href="https://github.com/RedThoroughbred/FNB58-MacOS/issues">Support</a> · <a href="https://github.com/RedThoroughbred/FNB58-MacOS">Source on GitHub</a></p>
+<p>WattBench is an independent project and is not affiliated with or endorsed by FNIRSI. FNIRSI and FNB58 are trademarks of their respective owners. Apple, the Apple logo and App Store are trademarks of Apple Inc.</p><p>© 2026 Seth Egger</p></footer>
+</div></body></html>
