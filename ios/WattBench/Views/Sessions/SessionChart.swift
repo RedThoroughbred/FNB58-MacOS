@@ -1,5 +1,8 @@
 import Charts
+import OSLog
 import SwiftUI
+
+private let chartLog = Logger(subsystem: "com.thebench.wattbench", category: "chart-debug")
 
 /// Visible-window presets for the detail chart. `all` stands for the whole
 /// session; pinching produces windows in between the presets.
@@ -72,6 +75,17 @@ final class SessionChartModel {
     }
     var cursor: Date?
     var range: ClosedRange<Date>?
+    /// While on, dragging across the plot selects a range instead of moving
+    /// the scrub cursor. `chartXSelection(range:)` never receives a drag in
+    /// this chart (the value selection or the enclosing List takes it), so
+    /// range mode pins the x domain to the visible window (no scrolling;
+    /// pinch still zooms) and reads the drag itself through a `ChartProxy`.
+    var rangeMode = false {
+        didSet {
+            guard rangeMode != oldValue else { return }
+            if rangeMode { cursor = nil } else { range = nil }
+        }
+    }
     /// Width of the plot area in points; drives the bucket count.
     var plotWidth: Double = 320 {
         didSet { if plotWidth != oldValue { scheduleRecompute() } }
@@ -101,6 +115,13 @@ final class SessionChartModel {
 
     var duration: TimeInterval { end.timeIntervalSince(start) }
     var isEmpty: Bool { readings.isEmpty }
+
+    /// The window currently on screen (the x domain while selecting a range).
+    var visibleDomain: ClosedRange<Date> {
+        let lower = min(max(scrollPosition, start), end)
+        let upper = min(end, lower.addingTimeInterval(max(visibleSeconds, 1)))
+        return lower...max(lower, upper)
+    }
 
     /// The preset matching the current window, nil for a pinched window.
     var currentSpan: SessionChartSpan? {
@@ -308,13 +329,28 @@ struct SessionChart: View {
             // scrub readout so it never covers the trace.
             .frame(height: Self.plotHeight + Self.readoutHeadroom)
 
-            if model.availableSpans.count > 1 || model.currentSpan == nil {
-                spanPicker
+            HStack(spacing: 12) {
+                if model.availableSpans.count > 1 || model.currentSpan == nil {
+                    spanPicker
+                } else {
+                    Spacer(minLength: 0)
+                }
+                rangeToggle
+            }
+            if model.rangeMode {
+                Text("Drag across the chart to select a range.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .transition(.opacity)
             }
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20, style: .continuous))
         .sensoryFeedback(.selection, trigger: model.metric) { _, _ in !reduceMotion && prefs.hapticsEnabled }
+        .sensoryFeedback(.selection, trigger: model.rangeMode) { _, _ in !reduceMotion && prefs.hapticsEnabled }
+        .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: model.rangeMode)
+        .onChange(of: model.cursor) { _, c in chartLog.info("DEBUG cursor \(String(describing: c))") }
+        .onChange(of: model.range) { _, r in chartLog.info("DEBUG range \(String(describing: r))") }
         .onChange(of: displayScale, initial: true) { _, scale in model.displayScale = scale }
     }
 
@@ -322,7 +358,24 @@ struct SessionChart: View {
 
     private var color: Color { model.metric.color }
 
-    private var chart: some View {
+    /// The plot with exactly one selection gesture attached (see
+    /// `SessionChartModel.rangeMode`).
+    @ViewBuilder private var chart: some View {
+        if model.rangeMode {
+            plot
+                .chartXScale(domain: model.visibleDomain)
+                .chartOverlay { proxy in rangeOverlay(proxy) }
+        } else {
+            plot
+                .chartXScale(domain: model.start...model.end)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: max(model.visibleSeconds, 1))
+                .chartScrollPosition(x: $model.scrollPosition)
+                .chartXSelection(value: $model.cursor)
+        }
+    }
+
+    private var plot: some View {
         let f = prefs.formatter
         return Chart {
             if model.hasEnvelope {
@@ -388,13 +441,7 @@ struct SessionChart: View {
                     }
             }
         }
-        .chartXScale(domain: model.start...model.end)
         .chartYScale(domain: model.yDomain)
-        .chartScrollableAxes(.horizontal)
-        .chartXVisibleDomain(length: max(model.visibleSeconds, 1))
-        .chartScrollPosition(x: $model.scrollPosition)
-        .chartXSelection(value: $model.cursor)
-        .chartXSelection(range: $model.range)
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                 AxisGridLine()
@@ -497,6 +544,55 @@ struct SessionChart: View {
             }
         }
         .accessibilityHidden(true)
+    }
+
+    // MARK: Range mode
+
+    /// Maps a horizontal drag over the plot to a date range. High priority so
+    /// the List's own pan cannot claim it; the overlay exists only while
+    /// range mode is on.
+    private func rangeOverlay(_ proxy: ChartProxy) -> some View {
+        GeometryReader { geo in
+            let frame = proxy.plotFrame.map { geo[$0] } ?? geo.frame(in: .local)
+            let domain = model.visibleDomain
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 6, coordinateSpace: .local)
+                        .onChanged { value in
+                            let a = min(max(value.startLocation.x, frame.minX), frame.maxX) - frame.minX
+                            let b = min(max(value.location.x, frame.minX), frame.maxX) - frame.minX
+                            guard let d0: Date = proxy.value(atX: a), let d1: Date = proxy.value(atX: b) else { return }
+                            let lower = min(max(min(d0, d1), domain.lowerBound), domain.upperBound)
+                            let upper = min(max(max(d0, d1), domain.lowerBound), domain.upperBound)
+                            model.range = lower...upper
+                        }
+                )
+        }
+    }
+
+    /// Plain style: the list-row button styles draw their label wider than
+    /// it measures and drop the title.
+    private var rangeToggle: some View {
+        let active = model.rangeMode
+        return Button {
+            model.rangeMode.toggle()
+        } label: {
+            Label("Range", systemImage: "selection.pin.in.out")
+                .font(.subheadline.weight(.medium))
+                .labelStyle(.titleAndIcon)
+                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .frame(height: 32)
+                .foregroundStyle(active ? Color.white : Color.primary)
+                .background(active ? Color.accentColor : Color(.tertiarySystemFill), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel(active ? "Exit range selection" : "Select a range")
+        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     // MARK: Window picker

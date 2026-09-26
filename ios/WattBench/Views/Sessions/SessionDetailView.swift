@@ -296,7 +296,7 @@ struct SessionDetailView: View {
             RangeStatsCard(range: range, stats: rangeStats, sessionStart: chart.start,
                            sessionEnergyWh: s.stats.energyWh, canSaveMarkers: session != nil,
                            onSaveMarkers: saveRangeMarkers,
-                           onClose: { chart.range = nil })
+                           onClose: { chart.rangeMode = false })
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -430,7 +430,7 @@ struct SessionDetailView: View {
         s.markers.append(Marker(timestamp: range.lowerBound, label: "Range start"))
         s.markers.append(Marker(timestamp: range.upperBound, label: "Range end"))
         persist(s)
-        chart?.range = nil
+        chart?.rangeMode = false
     }
 
     /// Markers live in the session file, so they are saved through
